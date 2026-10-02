@@ -45,16 +45,24 @@ export class Game {
         this.uiLayer.style.display = 'none';
 
         if (answer === 'はい') {
-            // ▼ 改行(\n)を追加して美しく2行に配置
-            this.showMessage('ウソなのわかってるから\nおとなしく「いいえ」を選べってw', 'retry');
+            // 「はい」：画面中央(第3引数を true)に超巨大文字で表示
+            this.showMessage('ウソなのわかってるから\nおとなしく「いいえ」を選べってw', 'retry', true);
         } else {
-            // ▼ 綺麗なバランスで2行に配置
-            this.showMessage('いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww', 'start_game');
+            // 「いいえ」：画面下部(第3引数を false)に表示
+            this.showMessage('いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww', 'start_game', false);
         }
     }
 
-    showMessage(text, nextAction) {
+    // 第3引数(isCenter)で中央表示かどうかを判定
+    showMessage(text, nextAction, isCenter = false) {
         this.messageText.innerText = text;
+
+        if (isCenter) {
+            this.messageLayer.classList.add('center-mode'); // 中央表示にする
+        } else {
+            this.messageLayer.classList.remove('center-mode'); // 下部表示に戻す
+        }
+
         this.messageLayer.style.display = 'flex';
         this.nextAction = nextAction; 
     }

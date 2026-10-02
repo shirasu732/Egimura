@@ -1,0 +1,134 @@
+/* 画面全体の余白を消してフルスクリーン対応 */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; 
+    font-family: sans-serif;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+canvas {
+    display: block;
+}
+
+/* 質問画面のUI層 */
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: white;
+}
+
+/* 質問文のスタイル */
+#question-text {
+    font-size: 40px;
+    margin-bottom: 30px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.button-container {
+    margin-top: 10px;
+}
+
+/* ボタンのスタイル */
+button {
+    font-size: 26px;
+    font-weight: bold;
+    margin: 0 20px;
+    padding: 15px 40px;
+    border-radius: 8px;
+    border: 2px solid white;
+    background-color: #333;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+button:hover {
+    background-color: #555;
+    transform: scale(1.05);
+}
+
+/* ノベルゲーム風テキストボックスのUI層（デフォルトは下部表示） */
+#message-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 50px;
+}
+
+/* メッセージボックスの基本スタイル */
+#message-box {
+    width: 90%;
+    max-width: 1100px;
+    height: 250px;
+    background-color: rgba(0, 0, 30, 0.9);
+    border: 5px solid white;
+    border-radius: 15px;
+    padding: 30px 50px;
+    box-sizing: border-box;
+    color: white;
+    font-size: 36px;
+    line-height: 1.5;
+    font-weight: bold;
+    position: relative;
+    cursor: pointer;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.9);
+    box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* 点滅マークのスタイル */
+.blink-mark {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    font-size: 28px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ▼ 追加：「はい」のとき用（画面中央表示 & 超巨大文字） */
+#message-layer.center-mode {
+    justify-content: center; /* 画面中央に移動 */
+    padding-bottom: 0;
+}
+
+#message-layer.center-mode #message-box {
+    font-size: 48px;         /* 文字を48pxに拡大 */
+    height: 320px;          /* 枠の高さも拡大 */
+    border-color: #ff4d4d;   /* 煽り感を出すために枠線を赤っぽく */
+    background-color: rgba(30, 0, 0, 0.95);
+}
