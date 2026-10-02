@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>恋色パレット</title>
     <!-- 外部CSSファイルの読み込み -->
     <link rel="stylesheet" href="style.css">
@@ -11,20 +12,28 @@
         <!-- フルスクリーン描画用のキャンバス -->
         <canvas id="gameCanvas"></canvas>
         
-        <!-- 最初の質問画面 -->
-        <div id="ui-layer">
-            <!-- パスを images/logo.png に変更 -->
+        <!-- 1. タイトル画面（暗転フェードインアニメーション付き） -->
+        <div id="title-layer" class="fade-in">
             <img id="game-logo" src="images/logo.png" alt="恋色パレット">
             
-            <h2 id="question-text">あなたには彼女がいますか？</h2>
-            <div class="button-container">
-                <button id="btn-yes">はい</button>
-                <button id="btn-no">いいえ</button>
+            <div class="menu-container">
+                <button id="btn-start" class="menu-btn">ゲーム開始</button>
+                <button id="btn-load" class="menu-btn">セーブから開始</button>
+                <button id="btn-exit" class="menu-btn">終了</button>
             </div>
         </div>
 
-        <!-- メッセージ用テキストボックス -->
-        <div id="message-layer">
+        <!-- 2. 質問画面（ゲーム開始を押すと表示される画面） -->
+        <div id="question-layer" class="ui-screen" style="display: none;">
+            <h2 id="question-text">あなたには彼女がいますか？</h2>
+            <div class="button-container">
+                <button id="btn-yes" class="choice-btn">はい</button>
+                <button id="btn-no" class="choice-btn">いいえ</button>
+            </div>
+        </div>
+
+        <!-- 3. メッセージ用テキストボックス（ゲーム本編用） -->
+        <div id="message-layer" style="display: none;">
             <div id="message-box">
                 <span id="message-text"></span>
                 <span class="blink-mark">▼</span>

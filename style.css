@@ -1,25 +1,127 @@
-/* 画面全体の余白を消してフルスクリーン対応 */
-html, body {
+/* 全体の基本設定 */
+* {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden; 
-    font-family: sans-serif;
+    box-sizing: border-box;
 }
 
-#game-container {
-    position: relative;
+body {
     width: 100vw;
     height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-canvas {
+/* ゲーム画面全体コンテナ */
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Canvas設定 */
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: block;
 }
 
-/* 質問画面のUI層 */
-#ui-layer {
+/* --- アニメーション --- */
+.fade-in {
+    animation: fadeInAnimation 2s ease-in-out forwards;
+}
+
+@keyframes fadeInAnimation {
+    0% {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* --- 1. タイトル画面 --- */
+#title-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    z-index: 10;
+}
+
+/* ゲームロゴ画像 */
+#game-logo {
+    width: 60%;
+    max-width: 380px;
+    max-height: 25vh;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 40px;
+    filter: drop-shadow(0px 8px 25px rgba(255, 105, 180, 0.3));
+}
+
+/* タイトルメニューボタン群 */
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 280px;
+}
+
+.menu-btn {
+    width: 100%;
+    padding: 14px 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px solid #ffffff;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.menu-btn:hover {
+    background-color: #ffffff;
+    color: #111111;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+}
+
+.menu-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #666666;
+    color: #666666;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- 2. 質問画面 --- */
+.ui-screen {
     position: absolute;
     top: 0;
     left: 0;
@@ -31,9 +133,10 @@ canvas {
     align-items: center;
     background-color: rgba(0, 0, 0, 0.85);
     color: white;
+    padding: 20px;
+    z-index: 9;
 }
 
-/* 質問文のスタイル */
 #question-text {
     font-size: 40px;
     margin-bottom: 30px;
@@ -42,14 +145,13 @@ canvas {
 }
 
 .button-container {
-    margin-top: 10px;
+    display: flex;
+    gap: 20px;
 }
 
-/* ボタンのスタイル */
-button {
+.choice-btn {
     font-size: 26px;
     font-weight: bold;
-    margin: 0 20px;
     padding: 15px 40px;
     border-radius: 8px;
     border: 2px solid white;
@@ -59,12 +161,12 @@ button {
     transition: transform 0.1s, background-color 0.2s;
 }
 
-button:hover {
+.choice-btn:hover {
     background-color: #555;
     transform: scale(1.05);
 }
 
-/* ノベルゲーム風テキストボックスのUI層（デフォルトは下部表示） */
+/* --- 3. メッセージレイヤー（通常：画面下部） --- */
 #message-layer {
     position: absolute;
     top: 0;
@@ -76,9 +178,10 @@ button:hover {
     justify-content: flex-end;
     align-items: center;
     padding-bottom: 50px;
+    z-index: 20;
 }
 
-/* メッセージボックスの基本スタイル */
+/* メッセージボックス基本スタイル */
 #message-box {
     width: 90%;
     max-width: 1100px;
@@ -106,7 +209,7 @@ button:hover {
     box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
 }
 
-/* 点滅マークのスタイル */
+/* 送りマーク（点滅） */
 .blink-mark {
     position: absolute;
     bottom: 20px;
@@ -120,15 +223,15 @@ button:hover {
     50% { opacity: 0; }
 }
 
-/* ▼ 追加：「はい」のとき用（画面中央表示 & 超巨大文字） */
+/* --- 「はい」選択時（画面中央 & 超巨大太赤枠） --- */
 #message-layer.center-mode {
-    justify-content: center; /* 画面中央に移動 */
+    justify-content: center;
     padding-bottom: 0;
 }
 
 #message-layer.center-mode #message-box {
-    font-size: 48px;         /* 文字を48pxに拡大 */
-    height: 320px;          /* 枠の高さも拡大 */
-    border-color: #ff4d4d;   /* 煽り感を出すために枠線を赤っぽく */
+    font-size: 48px;
+    height: 320px;
+    border-color: #ff4d4d;
     background-color: rgba(30, 0, 0, 0.95);
 }
