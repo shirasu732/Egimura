@@ -3,6 +3,10 @@ export class Game {
         this.SAVE_KEY = "koiiro_palette_save";
         this.VOLUME_KEY = "koiiro_palette_volume";
 
+        // ★【内部音量倍率】コード側で実際の音量をさらに絞る設定（0.5 = さらに半分）
+        // もっと小さくしたい場合は 0.3 や 0.2 に変更してください。
+        this.bgmFactor = 0.5;
+
         // UI層・要素の取得
         this.titleLayer = document.getElementById("title-layer");
         this.questionLayer = document.getElementById("question-layer");
@@ -25,15 +29,15 @@ export class Game {
         this.canvas = document.getElementById("gameCanvas");
         this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
-        // BGM管理
-        this.bgm = new Audio("audio/bgm_title.mp3");
-        this.bgm.loop = true;
-        this.isBgmStarted = false;
+        // BGM要素の取得
+        this.bgm = document.getElementById("bgm-title");
 
-        // 音量設定の読み込み（保存値がなければデフォルト0.4）
+        // 音量設定の読み込み（保存値がなければデフォルト 0.1 = 10%）
         const savedVolume = localStorage.getItem(this.VOLUME_KEY);
-        this.currentVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.4;
-        this.bgm.volume = this.currentVolume;
+        this.currentVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.1;
+        
+        // 内部倍率を反映して音量を適用
+        this.applyVolume();
 
         this.nextAction = "";
 
@@ -42,20 +46,34 @@ export class Game {
         this.resizeCanvas();
     }
 
+    // 実際に鳴らす音量の適用処理（UI音量 × 内部倍率）
+    applyVolume() {
+        if (this.bgm) {
+            // 例: UIが0.1(10%)で bgmFactorが0.5なら、実際の再生音量は 0.05(5%) になります
+            this.bgm.volume = this.currentVolume * this.bgmFactor;
+        }
+    }
+
     // イベント登録
     initEvents() {
         window.addEventListener("resize", () => this.resizeCanvas());
 
-        // 初回画面操作（クリック/タップ）時にタイトル画面でBGM再生開始
-        const enableAudio = () => {
+        // 画面のどこをクリック/タッチしてもBGM再生を試みる
+        const tryPlayBgm = () => {
             this.startBGM();
-            document.removeEventListener("pointerdown", enableAudio);
         };
-        document.addEventListener("pointerdown", enableAudio);
+        document.addEventListener("click", tryPlayBgm);
+        document.addEventListener("pointerdown", tryPlayBgm);
 
         // タイトルボタン操作
-        this.btnStart.addEventListener("click", () => this.showQuestion());
-        this.btnLoad.addEventListener("click", () => this.loadGame());
+        this.btnStart.addEventListener("click", () => {
+            this.startBGM();
+            this.showQuestion();
+        });
+        this.btnLoad.addEventListener("click", () => {
+            this.startBGM();
+            this.loadGame();
+        });
         this.btnExit.addEventListener("click", () => this.exitGame());
 
         // 質問ボタン操作
@@ -75,6 +93,7 @@ export class Game {
             this.volumeSlider.addEventListener("input", (e) => {
                 const vol = parseFloat(e.target.value);
                 this.setVolume(vol);
+                this.startBGM();
             });
         }
     }
@@ -82,7 +101,7 @@ export class Game {
     // 音量設定処理
     setVolume(vol) {
         this.currentVolume = vol;
-        this.bgm.volume = vol;
+        this.applyVolume();
         if (this.volumeValueText) {
             this.volumeValueText.innerText = `${Math.round(vol * 100)}%`;
         }
@@ -91,20 +110,21 @@ export class Game {
 
     // BGM再生
     startBGM() {
-        if (!this.isBgmStarted) {
+        if (this.bgm && this.bgm.paused) {
             this.bgm.play().then(() => {
-                this.isBgmStarted = true;
+                console.log("BGM再生成功");
             }).catch(err => {
-                console.log("BGM自動再生の待機中:", err);
+                console.log("BGM自動再生ブロック（操作待ち）:", err);
             });
         }
     }
 
     // BGM停止
     stopBGM() {
-        this.bgm.pause();
-        this.bgm.currentTime = 0;
-        this.isBgmStarted = false;
+        if (this.bgm) {
+            this.bgm.pause();
+            this.bgm.currentTime = 0;
+        }
     }
 
     // キャンバス調整

@@ -12,7 +12,10 @@
         <!-- フルスクリーン描画用のキャンバス -->
         <canvas id="gameCanvas"></canvas>
         
-        <!-- 1. タイトル画面（暗転フェードインアニメーション付き） -->
+        <!-- BGM用オーディオ要素 -->
+        <audio id="bgm-title" src="./audio/bgm_title.mp3" loop preload="auto"></audio>
+
+        <!-- 1. タイトル画面 -->
         <div id="title-layer" class="ui-screen fade-in">
             <img id="game-logo" src="images/logo.png" alt="恋色パレット">
             
@@ -22,10 +25,10 @@
                 <button id="btn-exit" class="menu-btn">終了</button>
             </div>
 
-            <!-- 音量コントロール -->
+            <!-- 音量コントロール（初期値 20%） -->
             <div class="volume-container">
-                <label for="volume-slider" class="volume-label">🎵 BGM音量: <span id="volume-value">40%</span></label>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.4">
+                <label for="volume-slider" class="volume-label">🎵 BGM音量: <span id="volume-value">20%</span></label>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.2">
             </div>
         </div>
 
