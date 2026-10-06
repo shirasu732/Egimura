@@ -1,6 +1,7 @@
 export class Game {
     constructor() {
         this.SAVE_KEY = "koiiro_palette_save";
+        this.VOLUME_KEY = "koiiro_palette_volume";
 
         // UI層・要素の取得
         this.titleLayer = document.getElementById("title-layer");
@@ -16,34 +17,97 @@ export class Game {
         this.btnYes = document.getElementById("btn-yes");
         this.btnNo = document.getElementById("btn-no");
 
+        // 音量調整UIの取得
+        this.volumeSlider = document.getElementById("volume-slider");
+        this.volumeValueText = document.getElementById("volume-value");
+
         // キャンバスの取得
         this.canvas = document.getElementById("gameCanvas");
         this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
+        // BGM管理
+        this.bgm = new Audio("audio/bgm_title.mp3");
+        this.bgm.loop = true;
+        this.isBgmStarted = false;
+
+        // 音量設定の読み込み（保存値がなければデフォルト0.4）
+        const savedVolume = localStorage.getItem(this.VOLUME_KEY);
+        this.currentVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.4;
+        this.bgm.volume = this.currentVolume;
+
         this.nextAction = "";
 
         this.initEvents();
+        this.initVolumeUI();
         this.resizeCanvas();
     }
 
-    // イベントリスナーの一括登録
+    // イベント登録
     initEvents() {
         window.addEventListener("resize", () => this.resizeCanvas());
 
-        // タイトル画面のボタン操作
+        // 初回画面操作（クリック/タップ）時にタイトル画面でBGM再生開始
+        const enableAudio = () => {
+            this.startBGM();
+            document.removeEventListener("pointerdown", enableAudio);
+        };
+        document.addEventListener("pointerdown", enableAudio);
+
+        // タイトルボタン操作
         this.btnStart.addEventListener("click", () => this.showQuestion());
         this.btnLoad.addEventListener("click", () => this.loadGame());
         this.btnExit.addEventListener("click", () => this.exitGame());
 
-        // 質問画面のボタン操作
+        // 質問ボタン操作
         this.btnYes.addEventListener("click", () => this.handleAnswer(true));
         this.btnNo.addEventListener("click", () => this.handleAnswer(false));
 
-        // メッセージボックスのクリック操作
+        // メッセージボックス操作
         this.messageBox.addEventListener("click", () => this.handleNextMessage());
     }
 
-    // キャンバスのリサイズ対応
+    // 音量スライダーの初期化
+    initVolumeUI() {
+        if (this.volumeSlider && this.volumeValueText) {
+            this.volumeSlider.value = this.currentVolume;
+            this.volumeValueText.innerText = `${Math.round(this.currentVolume * 100)}%`;
+
+            this.volumeSlider.addEventListener("input", (e) => {
+                const vol = parseFloat(e.target.value);
+                this.setVolume(vol);
+            });
+        }
+    }
+
+    // 音量設定処理
+    setVolume(vol) {
+        this.currentVolume = vol;
+        this.bgm.volume = vol;
+        if (this.volumeValueText) {
+            this.volumeValueText.innerText = `${Math.round(vol * 100)}%`;
+        }
+        localStorage.setItem(this.VOLUME_KEY, vol);
+    }
+
+    // BGM再生
+    startBGM() {
+        if (!this.isBgmStarted) {
+            this.bgm.play().then(() => {
+                this.isBgmStarted = true;
+            }).catch(err => {
+                console.log("BGM自動再生の待機中:", err);
+            });
+        }
+    }
+
+    // BGM停止
+    stopBGM() {
+        this.bgm.pause();
+        this.bgm.currentTime = 0;
+        this.isBgmStarted = false;
+    }
+
+    // キャンバス調整
     resizeCanvas() {
         if (this.canvas) {
             this.canvas.width = window.innerWidth;
@@ -52,7 +116,6 @@ export class Game {
         }
     }
 
-    // 描画処理（背景など）
     draw() {
         if (this.ctx) {
             this.ctx.fillStyle = "#000000";
@@ -60,20 +123,20 @@ export class Game {
         }
     }
 
-    // すべてのUIレイヤーを非表示にする
+    // レイヤー非表示
     hideAllLayers() {
         this.titleLayer.style.display = "none";
         this.questionLayer.style.display = "none";
         this.messageLayer.style.display = "none";
     }
 
-    // 質問画面を表示
+    // 質問画面表示
     showQuestion() {
         this.hideAllLayers();
         this.questionLayer.style.display = "flex";
     }
 
-    // メッセージ画面を表示（第3引数で中央表示の切替）
+    // メッセージ表示
     showMessage(text, actionType, isCenter = false) {
         this.hideAllLayers();
         this.messageText.innerText = text;
@@ -88,19 +151,17 @@ export class Game {
         this.nextAction = actionType;
     }
 
-    // 「はい / いいえ」の選択処理
+    // 選択肢分岐
     handleAnswer(hasGirlfriend) {
         if (hasGirlfriend) {
-            // 「はい」：画面中央に超巨大文字で表示 ➔ 質問画面に戻る動作
             this.showMessage("ウソなのわかってるから\nおとなしく「いいえ」を選べってw", "retry", true);
         } else {
-            // 「いいえ」：進行データを保存し ➔ 本編へ移行する動作
             this.saveGame({ hasGirlfriend: false, sceneId: "本編開始" });
             this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "start_game", false);
         }
     }
 
-    // メッセージクリック後の分岐処理
+    // メッセージ進行
     handleNextMessage() {
         if (this.nextAction === "retry") {
             this.showQuestion();
@@ -110,7 +171,7 @@ export class Game {
         }
     }
 
-    // セーブデータの確認
+    // セーブデータ確認
     checkSaveData() {
         const data = localStorage.getItem(this.SAVE_KEY);
         if (this.btnLoad) {
@@ -133,14 +194,15 @@ export class Game {
         }
     }
 
-    // ゲーム終了処理
+    // ゲーム終了
     exitGame() {
         if (confirm("ゲームを終了しますか？")) {
+            this.stopBGM();
             this.titleLayer.innerHTML = "<h2 style='color: white;'>プレイありがとうございました！<br>タブを閉じて終了してください。</h2>";
         }
     }
 
-    // ゲーム起動
+    // 起動
     start() {
         this.checkSaveData();
         console.log("『恋色パレット』が起動しました。");
