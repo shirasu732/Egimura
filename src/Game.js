@@ -3,8 +3,7 @@ export class Game {
         this.SAVE_KEY = "koiiro_palette_save";
         this.VOLUME_KEY = "koiiro_palette_volume";
 
-        // ★【内部音量倍率】コード側で実際の音量をさらに絞る設定（0.5 = さらに半分）
-        // もっと小さくしたい場合は 0.3 や 0.2 に変更してください。
+        // 内部音量倍率（0.5 = さらに音量を半分にする）
         this.bgmFactor = 0.5;
 
         // UI層・要素の取得
@@ -13,6 +12,12 @@ export class Game {
         this.messageLayer = document.getElementById("message-layer");
         this.messageText = document.getElementById("message-text");
         this.messageBox = document.getElementById("message-box");
+
+        // ダイスUIの取得
+        this.diceLayer = document.getElementById("dice-layer");
+        this.diceResult = document.getElementById("dice-result");
+        this.btnRollDice = document.getElementById("btn-roll-dice");
+        this.btnDiceNext = document.getElementById("btn-dice-next");
 
         // ボタンの取得
         this.btnStart = document.getElementById("btn-start");
@@ -29,14 +34,19 @@ export class Game {
         this.canvas = document.getElementById("gameCanvas");
         this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
-        // BGM要素の取得
+        // 音声要素の取得
         this.bgm = document.getElementById("bgm-title");
+        this.seDice = document.getElementById("se-dice");
 
-        // 音量設定の読み込み（保存値がなければデフォルト 0.1 = 10%）
+        // Web Audio API 用（重複接続防止フラグ）
+        this.audioCtx = null;
+        this.seGainNode = null;
+        this.isAudioConnected = false;
+
+        // 音量設定の読み込み
         const savedVolume = localStorage.getItem(this.VOLUME_KEY);
         this.currentVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.1;
         
-        // 内部倍率を反映して音量を適用
         this.applyVolume();
 
         this.nextAction = "";
@@ -46,10 +56,33 @@ export class Game {
         this.resizeCanvas();
     }
 
-    // 実際に鳴らす音量の適用処理（UI音量 × 内部倍率）
+    // Web Audio APIの初期化（初回のみ実行）
+    initDiceAudioContext() {
+        if (this.isAudioConnected || !this.seDice) return;
+
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            this.audioCtx = new AudioContextClass();
+
+            // 音源要素をWeb Audio APIに接続（1度だけ実行）
+            const source = this.audioCtx.createMediaElementSource(this.seDice);
+            this.seGainNode = this.audioCtx.createGain();
+
+            // 音量を3倍（3.0）に設定
+            this.seGainNode.gain.value = 1.5;
+
+            source.connect(this.seGainNode);
+            this.seGainNode.connect(this.audioCtx.destination);
+
+            this.isAudioConnected = true;
+        } catch (e) {
+            console.warn("Web Audio API の初期化に失敗しました。通常再生に切り替えます:", e);
+        }
+    }
+
+    // 実際の音量を適用
     applyVolume() {
         if (this.bgm) {
-            // 例: UIが0.1(10%)で bgmFactorが0.5なら、実際の再生音量は 0.05(5%) になります
             this.bgm.volume = this.currentVolume * this.bgmFactor;
         }
     }
@@ -58,7 +91,7 @@ export class Game {
     initEvents() {
         window.addEventListener("resize", () => this.resizeCanvas());
 
-        // 画面のどこをクリック/タッチしてもBGM再生を試みる
+        // タッチ/クリックでBGM再生
         const tryPlayBgm = () => {
             this.startBGM();
         };
@@ -82,6 +115,10 @@ export class Game {
 
         // メッセージボックス操作
         this.messageBox.addEventListener("click", () => this.handleNextMessage());
+
+        // ダイス画面操作
+        this.btnRollDice.addEventListener("click", () => this.rollDice());
+        this.btnDiceNext.addEventListener("click", () => this.handleAfterDice());
     }
 
     // 音量スライダーの初期化
@@ -143,11 +180,12 @@ export class Game {
         }
     }
 
-    // レイヤー非表示
+    // 全レイヤー非表示
     hideAllLayers() {
         this.titleLayer.style.display = "none";
         this.questionLayer.style.display = "none";
         this.messageLayer.style.display = "none";
+        if (this.diceLayer) this.diceLayer.style.display = "none";
     }
 
     // 質問画面表示
@@ -176,19 +214,89 @@ export class Game {
         if (hasGirlfriend) {
             this.showMessage("ウソなのわかってるから\nおとなしく「いいえ」を選べってw", "retry", true);
         } else {
-            this.saveGame({ hasGirlfriend: false, sceneId: "本編開始" });
-            this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "start_game", false);
+            this.saveGame({ hasGirlfriend: false, sceneId: "SAN値チェック直前" });
+            this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "san_check_intro", false);
         }
     }
 
-    // メッセージ進行
+    // メッセージ進行処理
     handleNextMessage() {
         if (this.nextAction === "retry") {
             this.showQuestion();
+        } else if (this.nextAction === "san_check_intro") {
+            this.showMessage("辛辣な言葉を浴びせられたあなたは1D100のSAN値チェックです", "show_dice_screen", false);
+        } else if (this.nextAction === "show_dice_screen") {
+            this.showDiceScreen();
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
         }
+    }
+
+    // SAN値チェック（ダイス）画面の表示
+    showDiceScreen() {
+        this.hideAllLayers();
+        this.diceLayer.style.display = "flex";
+        this.diceResult.innerText = "??";
+        this.diceResult.classList.remove("fumble-effect", "shake");
+        this.btnRollDice.style.display = "inline-block";
+        this.btnRollDice.disabled = false;
+        this.btnDiceNext.style.display = "none";
+    }
+
+    // ダイス回転演出（効果音再生）
+    rollDice() {
+        this.btnRollDice.disabled = true;
+
+        // Web Audio APIの初期化
+        this.initDiceAudioContext();
+        if (this.audioCtx && this.audioCtx.state === "suspended") {
+            this.audioCtx.resume();
+        }
+
+        // ダイス効果音の再生
+        if (this.seDice) {
+            this.seDice.currentTime = 0;
+            this.seDice.play().catch(err => console.log("効果音再生エラー:", err));
+        }
+
+        const duration = 1800; // 回転時間（1.8秒）
+        const intervalTime = 40; // 40ミリ秒ごとに数字更新
+
+        // ランダムに数字が変わるパラパラアニメーション
+        const timer = setInterval(() => {
+            const randomVal = Math.floor(Math.random() * 99) + 1;
+            this.diceResult.innerText = randomVal;
+        }, intervalTime);
+
+        // 指定時間後に100で停止
+        setTimeout(() => {
+            clearInterval(timer);
+
+            // 効果音を停止
+            if (this.seDice) {
+                this.seDice.pause();
+                this.seDice.currentTime = 0;
+            }
+
+            // 必ず100に固定
+            this.diceResult.innerText = "100";
+            
+            // 赤発光＆画面シェイクの演出クラスを追加
+            this.diceResult.classList.add("fumble-effect", "shake");
+
+            // 0.6秒後に「次へ」ボタンを表示
+            setTimeout(() => {
+                this.btnRollDice.style.display = "none";
+                this.btnDiceNext.style.display = "inline-block";
+            }, 600);
+
+        }, duration);
+    }
+
+    // ダイス決定後の処理
+    handleAfterDice() {
+        this.showMessage("るるっかの正気は無くなった...", "start_game", true);
     }
 
     // セーブデータ確認
