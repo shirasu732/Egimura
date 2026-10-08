@@ -69,7 +69,7 @@ export class Game {
             this.seGainNode = this.audioCtx.createGain();
 
             // 音量を3倍（3.0）に設定
-            this.seGainNode.gain.value = 1.5;
+            this.seGainNode.gain.value = 1.0;
 
             source.connect(this.seGainNode);
             this.seGainNode.connect(this.audioCtx.destination);
@@ -227,6 +227,9 @@ export class Game {
             this.showMessage("辛辣な言葉を浴びせられたあなたは1D100のSAN値チェックです", "show_dice_screen", false);
         } else if (this.nextAction === "show_dice_screen") {
             this.showDiceScreen();
+        } else if (this.nextAction === "angel_intro") {
+            // ★ 「るるっかの正気は無くなった...」の次に表示
+            this.showMessage("次に目を覚ました時には、目の前に天使が居た", "start_game", true);
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
@@ -296,7 +299,8 @@ export class Game {
 
     // ダイス決定後の処理
     handleAfterDice() {
-        this.showMessage("るるっかの正気は無くなった...", "start_game", true);
+        // 次のアクションを "angel_intro" に設定
+        this.showMessage("るるっかの正気は無くなった...", "angel_intro", true);
     }
 
     // セーブデータ確認
