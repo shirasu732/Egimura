@@ -228,8 +228,8 @@ export class Game {
         } else if (this.nextAction === "show_dice_screen") {
             this.showDiceScreen();
         } else if (this.nextAction === "angel_intro") {
-            // ★ 「るるっかの正気は無くなった...」の次に表示
-            this.showMessage("次に目を覚ました時には、目の前に天使が居た", "start_game", true);
+            // ★ 「あなたの正気は無くなった...」の次に表示
+            this.showMessage("次に目を覚ました時、あなたの目の前に天使が居た", "start_game", true);
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
