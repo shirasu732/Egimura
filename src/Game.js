@@ -204,7 +204,7 @@ export class Game {
     showNameInputScreen() {
         this.hideAllLayers();
         if (this.playerNameInput) {
-            this.playerNameInput.value = ""; // 開いたときにも空にしておく
+            this.playerNameInput.value = "";
         }
         this.nameInputLayer.style.display = "flex";
     }
@@ -215,7 +215,6 @@ export class Game {
         if (inputVal !== "") {
             this.playerName = inputVal;
         }
-        // 質問画面へ進む
         this.showQuestion();
     }
 
@@ -263,7 +262,13 @@ export class Game {
         } else if (this.nextAction === "show_dice_screen") {
             this.showDiceScreen();
         } else if (this.nextAction === "angel_intro") {
-            this.showMessage("次に目を覚ました時には、目の前に天使が居た", "start_game", true);
+            this.showMessage("次に目を覚ました時には、目の前に女神様が居た", "god_speech_1", true);
+        } else if (this.nextAction === "god_speech_1") {
+            this.showMessage(`おぉ${this.playerName}よww、恋の1つも知らずに死んでしまうとは...ww`, "god_speech_2", true);
+        } else if (this.nextAction === "god_speech_2") {
+            this.showMessage("そんなあなたにはもう一度機会を与えましょう", "god_speech_3", true);
+        } else if (this.nextAction === "god_speech_3") {
+            this.showMessage("さぁその後ろの扉を通るのです", "start_game", true);
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
