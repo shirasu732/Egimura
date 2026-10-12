@@ -6,12 +6,20 @@ export class Game {
         // 内部音量倍率（0.5 = さらに音量を半分にする）
         this.bgmFactor = 0.5;
 
+        // プレイヤー名の初期値
+        this.playerName = "るるっか";
+
         // UI層・要素の取得
         this.titleLayer = document.getElementById("title-layer");
+        this.nameInputLayer = document.getElementById("name-input-layer");
         this.questionLayer = document.getElementById("question-layer");
         this.messageLayer = document.getElementById("message-layer");
         this.messageText = document.getElementById("message-text");
         this.messageBox = document.getElementById("message-box");
+
+        // 名前入力UIの取得
+        this.playerNameInput = document.getElementById("player-name-input");
+        this.btnNameSubmit = document.getElementById("btn-name-submit");
 
         // ダイスUIの取得
         this.diceLayer = document.getElementById("dice-layer");
@@ -69,7 +77,7 @@ export class Game {
             this.seGainNode = this.audioCtx.createGain();
 
             // 音量を3倍（3.0）に設定
-            this.seGainNode.gain.value = 1.0;
+            this.seGainNode.gain.value = 3.0;
 
             source.connect(this.seGainNode);
             this.seGainNode.connect(this.audioCtx.destination);
@@ -101,13 +109,16 @@ export class Game {
         // タイトルボタン操作
         this.btnStart.addEventListener("click", () => {
             this.startBGM();
-            this.showQuestion();
+            this.showNameInputScreen();
         });
         this.btnLoad.addEventListener("click", () => {
             this.startBGM();
             this.loadGame();
         });
         this.btnExit.addEventListener("click", () => this.exitGame());
+
+        // 名前決定ボタン操作
+        this.btnNameSubmit.addEventListener("click", () => this.submitPlayerName());
 
         // 質問ボタン操作
         this.btnYes.addEventListener("click", () => this.handleAnswer(true));
@@ -183,14 +194,38 @@ export class Game {
     // 全レイヤー非表示
     hideAllLayers() {
         this.titleLayer.style.display = "none";
+        if (this.nameInputLayer) this.nameInputLayer.style.display = "none";
         this.questionLayer.style.display = "none";
         this.messageLayer.style.display = "none";
         if (this.diceLayer) this.diceLayer.style.display = "none";
     }
 
-    // 質問画面表示
+    // 名前入力画面表示
+    showNameInputScreen() {
+        this.hideAllLayers();
+        if (this.playerNameInput) {
+            this.playerNameInput.value = ""; // 開いたときにも空にしておく
+        }
+        this.nameInputLayer.style.display = "flex";
+    }
+
+    // 名前の決定処理
+    submitPlayerName() {
+        const inputVal = this.playerNameInput.value.trim();
+        if (inputVal !== "") {
+            this.playerName = inputVal;
+        }
+        // 質問画面へ進む
+        this.showQuestion();
+    }
+
+    // 質問画面表示（名前を反映）
     showQuestion() {
         this.hideAllLayers();
+        const questionTextEl = document.getElementById("question-text");
+        if (questionTextEl) {
+            questionTextEl.innerText = `${this.playerName}には彼女がいますか？`;
+        }
         this.questionLayer.style.display = "flex";
     }
 
@@ -214,7 +249,7 @@ export class Game {
         if (hasGirlfriend) {
             this.showMessage("ウソなのわかってるから\nおとなしく「いいえ」を選べってw", "retry", true);
         } else {
-            this.saveGame({ hasGirlfriend: false, sceneId: "SAN値チェック直前" });
+            this.saveGame({ playerName: this.playerName, hasGirlfriend: false, sceneId: "SAN値チェック直前" });
             this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "san_check_intro", false);
         }
     }
@@ -224,12 +259,11 @@ export class Game {
         if (this.nextAction === "retry") {
             this.showQuestion();
         } else if (this.nextAction === "san_check_intro") {
-            this.showMessage("辛辣な言葉を浴びせられたあなたは1D100のSAN値チェックです", "show_dice_screen", false);
+            this.showMessage(`辛辣な言葉を浴びせられた${this.playerName}は1D100のSAN値チェックです`, "show_dice_screen", false);
         } else if (this.nextAction === "show_dice_screen") {
             this.showDiceScreen();
         } else if (this.nextAction === "angel_intro") {
-            // ★ 「あなたの正気は無くなった...」の次に表示
-            this.showMessage("次に目を覚ました時、あなたの目の前に天使が居た", "start_game", true);
+            this.showMessage("次に目を覚ました時には、目の前に天使が居た", "start_game", true);
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
@@ -299,8 +333,7 @@ export class Game {
 
     // ダイス決定後の処理
     handleAfterDice() {
-        // 次のアクションを "angel_intro" に設定
-        this.showMessage("るるっかの正気は無くなった...", "angel_intro", true);
+        this.showMessage(`${this.playerName}の正気は無くなった...`, "angel_intro", true);
     }
 
     // セーブデータ確認
@@ -322,7 +355,10 @@ export class Game {
         const data = localStorage.getItem(this.SAVE_KEY);
         if (data) {
             const saveData = JSON.parse(data);
-            this.showMessage(`セーブデータを読み込みました。\n（場面: ${saveData.sceneId || "本編"}）`, "start_game", false);
+            if (saveData.playerName) {
+                this.playerName = saveData.playerName;
+            }
+            this.showMessage(`セーブデータを読み込みました。\n（プレイヤー: ${this.playerName}）`, "start_game", false);
         }
     }
 
