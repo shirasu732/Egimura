@@ -26,6 +26,17 @@ body {
     align-items: center;
 }
 
+/* 背景レイヤー（シーンごとに美しいグラデーションが切り替わります） */
+#background-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    transition: background 0.8s ease-in-out;
+}
+
 /* Canvas設定 */
 #gameCanvas {
     position: absolute;
@@ -34,6 +45,7 @@ body {
     width: 100%;
     height: 100%;
     display: block;
+    z-index: 2;
 }
 
 /* --- アニメーション --- */
@@ -63,7 +75,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.85);
+    background-color: rgba(0, 0, 0, 0.4);
     color: white;
     padding: 20px;
     z-index: 10;
@@ -315,4 +327,44 @@ body {
     60% { transform: translate(-8px, -5px) scale(1.2); }
     80% { transform: translate(8px, 5px) scale(1.2); }
     100% { transform: translate(0, 0) scale(1.2); }
+}
+
+/* --- 5. まぶたの開閉演出 --- */
+.eyelid-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 25;
+    overflow: hidden;
+    display: none;
+}
+
+.eyelid-top, .eyelid-bottom {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background-color: #000000;
+    transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.eyelid-top {
+    top: 0;
+    transform: translateY(0);
+}
+
+.eyelid-bottom {
+    bottom: 0;
+    transform: translateY(0);
+}
+
+.eyelid-container.open .eyelid-top {
+    transform: translateY(-100%);
+}
+
+.eyelid-container.open .eyelid-bottom {
+    transform: translateY(100%);
 }

@@ -7,7 +7,16 @@ export class Game {
         this.bgmFactor = 0.5;
 
         // プレイヤー名の初期値
-        this.playerName = "るるっか";
+        this.playerName = "";
+
+        // シーンごとの背景グラデーション設定
+        this.BG_GRADIENTS = {
+            title: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", // タイトル：夜空の深み
+            question: "linear-gradient(135deg, #2c3e50, #3498db)",       // 質問：日常のブルー
+            dice: "linear-gradient(135deg, #4b0000, #1a0000, #000000)",   // ダイス：不気味な赤黒
+            god: "linear-gradient(135deg, #f39c12, #e67e22, #ffffff)",    // 女神：神聖な黄金の光
+            room: "linear-gradient(135deg, #7f8c8d, #bdc3c7, #2c3e50)"   // 新しい部屋：引っ越しの雰囲気
+        };
 
         // UI層・要素の取得
         this.titleLayer = document.getElementById("title-layer");
@@ -16,6 +25,7 @@ export class Game {
         this.messageLayer = document.getElementById("message-layer");
         this.messageText = document.getElementById("message-text");
         this.messageBox = document.getElementById("message-box");
+        this.backgroundLayer = document.getElementById("background-layer");
 
         // 名前入力UIの取得
         this.playerNameInput = document.getElementById("player-name-input");
@@ -62,6 +72,16 @@ export class Game {
         this.initEvents();
         this.initVolumeUI();
         this.resizeCanvas();
+
+        // 初期背景を設定
+        this.setBackground(this.BG_GRADIENTS.title);
+    }
+
+    // 背景を設定するヘルパーメソッド
+    setBackground(gradientStyle) {
+        if (this.backgroundLayer) {
+            this.backgroundLayer.style.background = gradientStyle;
+        }
     }
 
     // Web Audio APIの初期化（初回のみ実行）
@@ -72,11 +92,8 @@ export class Game {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             this.audioCtx = new AudioContextClass();
 
-            // 音源要素をWeb Audio APIに接続（1度だけ実行）
             const source = this.audioCtx.createMediaElementSource(this.seDice);
             this.seGainNode = this.audioCtx.createGain();
-
-            // 音量を3倍（3.0）に設定
             this.seGainNode.gain.value = 3.0;
 
             source.connect(this.seGainNode);
@@ -99,7 +116,6 @@ export class Game {
     initEvents() {
         window.addEventListener("resize", () => this.resizeCanvas());
 
-        // タッチ/クリックでBGM再生
         const tryPlayBgm = () => {
             this.startBGM();
         };
@@ -198,11 +214,14 @@ export class Game {
         this.questionLayer.style.display = "none";
         this.messageLayer.style.display = "none";
         if (this.diceLayer) this.diceLayer.style.display = "none";
+        const eyelidLayer = document.getElementById("eyelid-layer");
+        if (eyelidLayer) eyelidLayer.style.display = "none";
     }
 
     // 名前入力画面表示
     showNameInputScreen() {
         this.hideAllLayers();
+        this.setBackground(this.BG_GRADIENTS.title);
         if (this.playerNameInput) {
             this.playerNameInput.value = "";
         }
@@ -221,6 +240,7 @@ export class Game {
     // 質問画面表示（名前を反映）
     showQuestion() {
         this.hideAllLayers();
+        this.setBackground(this.BG_GRADIENTS.question);
         const questionTextEl = document.getElementById("question-text");
         if (questionTextEl) {
             questionTextEl.innerText = `${this.playerName}には彼女がいますか？`;
@@ -246,9 +266,11 @@ export class Game {
     // 選択肢分岐
     handleAnswer(hasGirlfriend) {
         if (hasGirlfriend) {
+            this.setBackground(this.BG_GRADIENTS.question);
             this.showMessage("ウソなのわかってるから\nおとなしく「いいえ」を選べってw", "retry", true);
         } else {
             this.saveGame({ playerName: this.playerName, hasGirlfriend: false, sceneId: "SAN値チェック直前" });
+            this.setBackground(this.BG_GRADIENTS.question);
             this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "san_check_intro", false);
         }
     }
@@ -258,26 +280,71 @@ export class Game {
         if (this.nextAction === "retry") {
             this.showQuestion();
         } else if (this.nextAction === "san_check_intro") {
+            this.setBackground(this.BG_GRADIENTS.question);
             this.showMessage(`辛辣な言葉を浴びせられた${this.playerName}は1D100のSAN値チェックです`, "show_dice_screen", false);
         } else if (this.nextAction === "show_dice_screen") {
             this.showDiceScreen();
         } else if (this.nextAction === "angel_intro") {
+            this.setBackground(this.BG_GRADIENTS.god);
             this.showMessage("次に目を覚ました時には、目の前に女神様が居た", "god_speech_1", true);
         } else if (this.nextAction === "god_speech_1") {
+            this.setBackground(this.BG_GRADIENTS.god);
             this.showMessage(`おぉ${this.playerName}よww、恋の1つも知らずに死んでしまうとは...ww`, "god_speech_2", true);
         } else if (this.nextAction === "god_speech_2") {
-            this.showMessage("そんなあなたにはもう一度機会を与えましょう", "god_speech_3", true);
+            this.setBackground(this.BG_GRADIENTS.god);
+            this.showMessage("そんなあなたにはもう一度チャンスをあげます", "god_speech_3", true);
         } else if (this.nextAction === "god_speech_3") {
-            this.showMessage("さぁその後ろの扉を通るのです", "start_game", true);
+            this.setBackground(this.BG_GRADIENTS.god);
+            this.showMessage("さぁその後ろの扉を通るのです", "room_awake_1", true);
+        } else if (this.nextAction === "room_awake_1") {
+            this.setBackground(this.BG_GRADIENTS.god);
+            this.showMessage("まばゆい光の向こう側へ足を踏み入れた瞬間、\n意識が暗転した――", "room_eyelid_open", true);
+        } else if (this.nextAction === "room_eyelid_open") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.playEyelidOpenAnimation(() => {
+                this.showMessage("…………\n……っ", "room_awake_3", true);
+            });
+        } else if (this.nextAction === "room_awake_3") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("見覚えのない天井。そして、山積みにされた段ボールの山。", "room_awake_4", false);
+        } else if (this.nextAction === "room_awake_4") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("どうやら、引っ越し先の新しい部屋のようだ。\n荷物はすでにすべて運び込まれているらしい。", "room_awake_5", false);
+        } else if (this.nextAction === "room_awake_5") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("スマホのカレンダーを確認する。\n……明日はいよいよ、記念すべき転校初日だった。", "start_game", false);
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
         }
     }
 
+    // まぶたがパカッと開くアニメーション演出
+    playEyelidOpenAnimation(callback) {
+        this.hideAllLayers();
+        const eyelidLayer = document.getElementById("eyelid-layer");
+        if (eyelidLayer) {
+            eyelidLayer.style.display = "block";
+            eyelidLayer.classList.remove("open");
+            
+            setTimeout(() => {
+                eyelidLayer.classList.add("open");
+            }, 200);
+
+            setTimeout(() => {
+                eyelidLayer.style.display = "none";
+                eyelidLayer.classList.remove("open");
+                if (callback) callback();
+            }, 1700);
+        } else {
+            if (callback) callback();
+        }
+    }
+
     // SAN値チェック（ダイス）画面の表示
     showDiceScreen() {
         this.hideAllLayers();
+        this.setBackground(this.BG_GRADIENTS.dice);
         this.diceLayer.style.display = "flex";
         this.diceResult.innerText = "??";
         this.diceResult.classList.remove("fumble-effect", "shake");
@@ -290,44 +357,35 @@ export class Game {
     rollDice() {
         this.btnRollDice.disabled = true;
 
-        // Web Audio APIの初期化
         this.initDiceAudioContext();
         if (this.audioCtx && this.audioCtx.state === "suspended") {
             this.audioCtx.resume();
         }
 
-        // ダイス効果音の再生
         if (this.seDice) {
             this.seDice.currentTime = 0;
             this.seDice.play().catch(err => console.log("効果音再生エラー:", err));
         }
 
-        const duration = 1800; // 回転時間（1.8秒）
-        const intervalTime = 40; // 40ミリ秒ごとに数字更新
+        const duration = 1800;
+        const intervalTime = 40;
 
-        // ランダムに数字が変わるパラパラアニメーション
         const timer = setInterval(() => {
             const randomVal = Math.floor(Math.random() * 99) + 1;
             this.diceResult.innerText = randomVal;
         }, intervalTime);
 
-        // 指定時間後に100で停止
         setTimeout(() => {
             clearInterval(timer);
 
-            // 効果音を停止
             if (this.seDice) {
                 this.seDice.pause();
                 this.seDice.currentTime = 0;
             }
 
-            // 必ず100に固定
             this.diceResult.innerText = "100";
-            
-            // 赤発光＆画面シェイクの演出クラスを追加
             this.diceResult.classList.add("fumble-effect", "shake");
 
-            // 0.6秒後に「次へ」ボタンを表示
             setTimeout(() => {
                 this.btnRollDice.style.display = "none";
                 this.btnDiceNext.style.display = "inline-block";
@@ -338,6 +396,7 @@ export class Game {
 
     // ダイス決定後の処理
     handleAfterDice() {
+        this.setBackground(this.BG_GRADIENTS.dice);
         this.showMessage(`${this.playerName}の正気は無くなった...`, "angel_intro", true);
     }
 
@@ -363,6 +422,7 @@ export class Game {
             if (saveData.playerName) {
                 this.playerName = saveData.playerName;
             }
+            this.setBackground(this.BG_GRADIENTS.room);
             this.showMessage(`セーブデータを読み込みました。\n（プレイヤー: ${this.playerName}）`, "start_game", false);
         }
     }
