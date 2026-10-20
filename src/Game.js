@@ -11,11 +11,10 @@ export class Game {
 
         // シーンごとの背景グラデーション設定
         this.BG_GRADIENTS = {
-            title: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", // タイトル：夜空の深み
-            question: "linear-gradient(135deg, #2c3e50, #3498db)",       // 質問：日常のブルー
-            dice: "linear-gradient(135deg, #4b0000, #1a0000, #000000)",   // ダイス：不気味な赤黒
-            god: "linear-gradient(135deg, #f39c12, #e67e22, #ffffff)",    // 女神：神聖な黄金の光
-            room: "linear-gradient(135deg, #7f8c8d, #bdc3c7, #2c3e50)"   // 新しい部屋：引っ越しの雰囲気
+            title: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", // タイトル
+            question: "linear-gradient(135deg, #2c3e50, #3498db)",       // 質問
+            god: "linear-gradient(135deg, #4b0082, #800080, #dda0dd)",    // 女神空間：神秘的な紫・光
+            room: "linear-gradient(135deg, #7f8c8d, #bdc3c7, #2c3e50)"   // 新しい部屋
         };
 
         // UI層・要素の取得
@@ -31,7 +30,7 @@ export class Game {
         this.playerNameInput = document.getElementById("player-name-input");
         this.btnNameSubmit = document.getElementById("btn-name-submit");
 
-        // ダイスUIの取得
+        // ダイスUIの取得（必要に応じて保持）
         this.diceLayer = document.getElementById("dice-layer");
         this.diceResult = document.getElementById("dice-result");
         this.btnRollDice = document.getElementById("btn-roll-dice");
@@ -142,10 +141,6 @@ export class Game {
 
         // メッセージボックス操作
         this.messageBox.addEventListener("click", () => this.handleNextMessage());
-
-        // ダイス画面操作
-        this.btnRollDice.addEventListener("click", () => this.rollDice());
-        this.btnDiceNext.addEventListener("click", () => this.handleAfterDice());
     }
 
     // 音量スライダーの初期化
@@ -269,9 +264,9 @@ export class Game {
             this.setBackground(this.BG_GRADIENTS.question);
             this.showMessage("ウソなのわかってるから\nおとなしく「いいえ」を選べってw", "retry", true);
         } else {
-            this.saveGame({ playerName: this.playerName, hasGirlfriend: false, sceneId: "SAN値チェック直前" });
+            this.saveGame({ playerName: this.playerName, hasGirlfriend: false, sceneId: "オープニング開始" });
             this.setBackground(this.BG_GRADIENTS.question);
-            this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "san_check_intro", false);
+            this.showMessage("いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww", "op_step_1", false);
         }
     }
 
@@ -279,40 +274,63 @@ export class Game {
     handleNextMessage() {
         if (this.nextAction === "retry") {
             this.showQuestion();
-        } else if (this.nextAction === "san_check_intro") {
+        } else if (this.nextAction === "op_step_1") {
             this.setBackground(this.BG_GRADIENTS.question);
-            this.showMessage(`辛辣な言葉を浴びせられた${this.playerName}は1D100のSAN値チェックです`, "show_dice_screen", false);
-        } else if (this.nextAction === "show_dice_screen") {
-            this.showDiceScreen();
-        } else if (this.nextAction === "angel_intro") {
+            this.showMessage("あまりに鋭いちくちく言葉が心に刺さったことが致命傷となり、俺の意識は暗闇へと沈んでいった。", "op_step_2", true);
+        } else if (this.nextAction === "op_step_2") {
             this.setBackground(this.BG_GRADIENTS.god);
-            this.showMessage("次に目を覚ました時には、目の前に女神様が居た", "god_speech_1", true);
-        } else if (this.nextAction === "god_speech_1") {
-            this.setBackground(this.BG_GRADIENTS.god);
-            this.showMessage(`おぉ${this.playerName}よww、恋の1つも知らずに死んでしまうとは...ww`, "god_speech_2", true);
-        } else if (this.nextAction === "god_speech_2") {
-            this.setBackground(this.BG_GRADIENTS.god);
-            this.showMessage("そんなあなたにはもう一度チャンスをあげます", "god_speech_3", true);
-        } else if (this.nextAction === "god_speech_3") {
-            this.setBackground(this.BG_GRADIENTS.god);
-            this.showMessage("さぁその後ろの扉を通るのです", "room_awake_1", true);
-        } else if (this.nextAction === "room_awake_1") {
-            this.setBackground(this.BG_GRADIENTS.god);
-            this.showMessage("まばゆい光の向こう側へ足を踏み入れた瞬間、\n意識が暗転した――", "room_eyelid_open", true);
-        } else if (this.nextAction === "room_eyelid_open") {
+            this.showMessage("???「………………ふむ。これはまた、随分と珍妙な死に方をしたものじゃな」", "op_step_3", true);
+        } else if (this.nextAction === "op_step_3") {
+            this.showMessage("主人公「………………誰?」", "op_step_4", true);
+        } else if (this.nextAction === "op_step_4") {
+            this.showMessage("女神「妾は恋愛を司る女神じゃ」\n女神「しかし、恋人ができぬと言われた程度で死ぬとは･･････くくっ、愉快な奴よ」", "op_step_5", true);
+        } else if (this.nextAction === "op_step_5") {
+            this.showMessage("主人公「笑い事じゃないんだけど!?」", "op_step_6", true);
+        } else if (this.nextAction === "op_step_6") {
+            this.showMessage("女神「しかも恋愛経験は皆無、と。･･････なるほど、哀れじゃな」", "op_step_7", true);
+        } else if (this.nextAction === "op_step_7") {
+            this.showMessage("主人公「追い打ちかけるのやめてくれる? もう一回死ぬよ?」", "op_step_8", true);
+        } else if (this.nextAction === "op_step_8") {
+            this.showMessage("女神「ふむ…………･･よし、決めた。お前にもう一度、青春をくれてやろう」", "op_step_9", true);
+        } else if (this.nextAction === "op_step_9") {
+            this.showMessage("主人公「･･････は?」", "op_step_10", true);
+        } else if (this.nextAction === "op_step_10") {
+            this.showMessage("女神「高校二年生、転入生。始業式は明日じゃ。住む場所も生活の面倒も見てやる」", "op_step_11", true);
+        } else if (this.nextAction === "op_step_11") {
+            this.showMessage("主人公「いや、勝手に決めるなって!」", "op_step_12", true);
+        } else if (this.nextAction === "op_step_12") {
+            this.showMessage("女神「なに、難しいことはない。今度こそ恋人の一人でも作ってみせよ」", "op_step_13", true);
+        } else if (this.nextAction === "op_step_13") {
+            this.showMessage("主人公「だから話を――」", "op_step_14", true);
+        } else if (this.nextAction === "op_step_14") {
+            this.showMessage("女神「では、妾を退屈させるでないぞ?」", "op_eyelid_open", true);
+        } else if (this.nextAction === "op_eyelid_open") {
+            // まぶたを開くアニメーション演出をはさんで新しい部屋へ
             this.setBackground(this.BG_GRADIENTS.room);
             this.playEyelidOpenAnimation(() => {
-                this.showMessage("…………\n……っ", "room_awake_3", true);
+                this.showMessage("目が覚めると見知らぬ天井が目に映る。\nどうやら、本当に転生したらしい。", "op_step_15", false);
             });
-        } else if (this.nextAction === "room_awake_3") {
+        } else if (this.nextAction === "op_step_15") {
             this.setBackground(this.BG_GRADIENTS.room);
-            this.showMessage("見覚えのない天井。そして、山積みにされた段ボールの山。", "room_awake_4", false);
-        } else if (this.nextAction === "room_awake_4") {
+            this.showMessage("机の上には、学生証と転入手続きの書類。\nそして荷解き途中と思しき段ボールの山。", "op_step_16", false);
+        } else if (this.nextAction === "op_step_16") {
             this.setBackground(this.BG_GRADIENTS.room);
-            this.showMessage("どうやら、引っ越し先の新しい部屋のようだ。\n荷物はすでにすべて運び込まれているらしい。", "room_awake_5", false);
-        } else if (this.nextAction === "room_awake_5") {
+            this.showMessage("高校二年生、明日から転入･･･ 。\nあの女神、言っていたことは本当だったのか。", "op_step_17", false);
+        } else if (this.nextAction === "op_step_17") {
             this.setBackground(this.BG_GRADIENTS.room);
-            this.showMessage("スマホのカレンダーを確認する。\n……明日はいよいよ、記念すべき転校初日だった。", "start_game", false);
+            this.showMessage("玄関には、引っ越しの挨拶用らしい菓子折りが置かれている。\nその上には一枚のメモ。", "op_step_18", false);
+        } else if (this.nextAction === "op_step_18") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("『近所への挨拶くらいはしておけ。人付き合いは恋愛の基本じゃぞ』", "op_step_19", false);
+        } else if (this.nextAction === "op_step_19") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("『追伸:まあ、お前には難しいかもしれぬがな』", "op_step_20", false);
+        } else if (this.nextAction === "op_step_20") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("主人公「………………最後まで余計なお世話だ!」", "op_step_21", false);
+        } else if (this.nextAction === "op_step_21") {
+            this.setBackground(this.BG_GRADIENTS.room);
+            this.showMessage("とはいえ、これから暮らす場所だ。\n挨拶くらいはしておこう。", "start_game", false);
         } else if (this.nextAction === "start_game") {
             this.hideAllLayers();
             console.log("ゲーム本編を開始します");
@@ -339,65 +357,6 @@ export class Game {
         } else {
             if (callback) callback();
         }
-    }
-
-    // SAN値チェック（ダイス）画面の表示
-    showDiceScreen() {
-        this.hideAllLayers();
-        this.setBackground(this.BG_GRADIENTS.dice);
-        this.diceLayer.style.display = "flex";
-        this.diceResult.innerText = "??";
-        this.diceResult.classList.remove("fumble-effect", "shake");
-        this.btnRollDice.style.display = "inline-block";
-        this.btnRollDice.disabled = false;
-        this.btnDiceNext.style.display = "none";
-    }
-
-    // ダイス回転演出（効果音再生）
-    rollDice() {
-        this.btnRollDice.disabled = true;
-
-        this.initDiceAudioContext();
-        if (this.audioCtx && this.audioCtx.state === "suspended") {
-            this.audioCtx.resume();
-        }
-
-        if (this.seDice) {
-            this.seDice.currentTime = 0;
-            this.seDice.play().catch(err => console.log("効果音再生エラー:", err));
-        }
-
-        const duration = 1800;
-        const intervalTime = 40;
-
-        const timer = setInterval(() => {
-            const randomVal = Math.floor(Math.random() * 99) + 1;
-            this.diceResult.innerText = randomVal;
-        }, intervalTime);
-
-        setTimeout(() => {
-            clearInterval(timer);
-
-            if (this.seDice) {
-                this.seDice.pause();
-                this.seDice.currentTime = 0;
-            }
-
-            this.diceResult.innerText = "100";
-            this.diceResult.classList.add("fumble-effect", "shake");
-
-            setTimeout(() => {
-                this.btnRollDice.style.display = "none";
-                this.btnDiceNext.style.display = "inline-block";
-            }, 600);
-
-        }, duration);
-    }
-
-    // ダイス決定後の処理
-    handleAfterDice() {
-        this.setBackground(this.BG_GRADIENTS.dice);
-        this.showMessage(`${this.playerName}の正気は無くなった...`, "angel_intro", true);
     }
 
     // セーブデータ確認
