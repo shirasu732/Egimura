@@ -1,10 +1,18 @@
-// シーンごとの背景グラデーション
+// 画像背景の書き方（中央に合わせて画面いっぱいに表示）
+const img = (file) => `url("images/${file}") center / cover no-repeat #000`;
+
+// シーンごとの背景
 const BG = {
     title: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)",   // タイトル
-    question: "linear-gradient(135deg, #2c3e50, #3498db)",         // 質問
-    god: "linear-gradient(135deg, #4b0082, #800080, #dda0dd)",      // 女神空間
-    room: "linear-gradient(135deg, #7f8c8d, #bdc3c7, #2c3e50)"     // 新しい部屋
+    question: img("bg_question.jpg"),                               // 質問（夜の住宅街）
+    god: img("bg_god.jpg"),                                         // 女神空間
+    room: img("bg_room.jpg")                                        // 新しい部屋
 };
+
+// 画像を先に読み込んでおき、切り替え時のちらつきを防ぐ
+["bg_question.jpg", "bg_god.jpg", "bg_room.jpg"].forEach((file) => {
+    new Image().src = `images/${file}`;
+});
 
 // オープニングの会話データ
 // bg: 背景 / center: 中央の赤枠表示 / eyelid: 表示前にまぶたが開く演出を入れる
@@ -73,7 +81,9 @@ export class Game {
         this.btnNo = $("btn-no");
         this.volumeSlider = $("volume-slider");
         this.volumeValueText = $("volume-value");
-        this.bgm = $("bgm-title");
+        this.bgmTitle = $("bgm-title");
+        this.bgmMain = $("bgm-main");
+        this.bgm = this.bgmTitle;   // 今鳴らしているBGM
 
         // 音量設定の読み込み
         const savedVolume = localStorage.getItem(this.VOLUME_KEY);
@@ -92,7 +102,9 @@ export class Game {
 
     // 実際の音量を適用
     applyVolume() {
-        this.bgm.volume = this.currentVolume * this.bgmFactor;
+        const vol = this.currentVolume * this.bgmFactor;
+        this.bgmTitle.volume = vol;
+        this.bgmMain.volume = vol;
     }
 
     // イベント登録
@@ -142,6 +154,14 @@ export class Game {
         this.bgm.currentTime = 0;
     }
 
+    // 本編BGMに切り替え（タイトル曲は止める）
+    switchToMainBGM() {
+        if (this.bgm === this.bgmMain) return;
+        this.stopBGM();
+        this.bgm = this.bgmMain;
+        this.startBGM();
+    }
+
     // 全レイヤー非表示
     hideAllLayers() {
         this.titleLayer.style.display = "none";
@@ -153,6 +173,7 @@ export class Game {
 
     // 名前入力画面
     showNameInputScreen() {
+        this.switchToMainBGM();
         this.hideAllLayers();
         this.setBackground("title");
         this.playerNameInput.value = "";
@@ -265,6 +286,7 @@ export class Game {
     loadGame() {
         const data = localStorage.getItem(this.SAVE_KEY);
         if (!data) return;
+        this.switchToMainBGM();
         const saveData = JSON.parse(data);
         if (saveData.playerName) {
             this.playerName = saveData.playerName;
