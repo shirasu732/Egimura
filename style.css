@@ -1,312 +1,477 @@
-/* 全体の基本設定 */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* ============================================================
+   恋色パレット スタイル
+   ============================================================ */
+:root {
+    --pink: #ff7eb6;
+    --pink-deep: #e94f93;
+    --lavender: #b9a4ff;
+    --ink: #fff;
+    --window: rgba(20, 16, 40, 0.82);
+    --window-line: rgba(255, 190, 225, 0.55);
+    --center-window: rgba(40, 0, 10, 0.92);
+    --center-line: #ff4d6d;
+    --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
 }
 
-body {
-    width: 100vw;
-    height: 100vh;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    background-color: #000;
-    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background: #000;
+    font-family: var(--font);
+    color: var(--ink);
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-/* ゲーム画面全体コンテナ */
-#game-container {
+button { font-family: inherit; }
+
+#game-container { position: fixed; inset: 0; overflow: hidden; }
+
+/* ---------------- 舞台 ---------------- */
+#stage { position: absolute; inset: 0; }
+#stage.shake { animation: shake 0.45s cubic-bezier(.36, .07, .19, .97); }
+@keyframes shake {
+    10%, 90% { transform: translate(-2px, 1px); }
+    20%, 80% { transform: translate(5px, -2px); }
+    30%, 50%, 70% { transform: translate(-9px, 3px); }
+    40%, 60% { transform: translate(9px, -3px); }
+}
+
+/* 背景：2枚を重ねてクロスフェード、ゆっくり寄ったり流れたりする */
+.bg-layer {
+    position: absolute;
+    inset: -4%;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) center / cover no-repeat;
+    opacity: 0;
+    transition: opacity 1.1s ease;
+    will-change: transform, opacity;
+    animation: drift 26s ease-in-out infinite alternate;
+}
+.bg-layer.active { opacity: 1; }
+#bg-b { animation-delay: -13s; }
+@keyframes drift {
+    0%   { transform: scale(1.0) translate(0, 0); }
+    100% { transform: scale(1.07) translate(-1.5%, -1%); }
+}
+.bg-layer.title-bg {
+    background: radial-gradient(ellipse at 30% 20%, #4a2a6b 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 90%, #6b2a4f 0%, transparent 50%),
+                linear-gradient(135deg, #140f2e, #1d1645 50%, #2a1440);
+}
+
+#bg-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+#fx-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+#fx-canvas.visible { opacity: 1; }
+
+/* ---------------- 立ち絵 ---------------- */
+#chara-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
+}
+#chara-img {
+    height: 92vh;
+    max-width: 90vw;
+    object-fit: contain;
+    object-position: bottom;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease, filter 0.8s ease;
+    filter: drop-shadow(0 0 18px rgba(255, 220, 255, 0.35));
+}
+#chara-img.shown { opacity: 1; transform: translateY(0); animation: breathe 5s ease-in-out 0.6s infinite; }
+#chara-img.silhouette { filter: brightness(0) drop-shadow(0 0 24px rgba(220, 180, 255, 0.9)); }
+@keyframes breathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-4px) scale(1.004); }
+}
+
+/* ---------------- メッセージウィンドウ ---------------- */
+#message-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0 16px clamp(16px, 4vh, 40px);
+    transition: opacity 0.25s ease;
+}
+#message-layer.window-hidden { opacity: 0; }
+
+#message-box {
     position: relative;
-    width: 100%;
-    height: 100%;
+    width: min(1100px, 100%);
+    min-height: clamp(150px, 26vh, 230px);
+    padding: clamp(26px, 4vh, 38px) clamp(22px, 4vw, 54px) clamp(40px, 6vh, 52px);
+    background: linear-gradient(180deg, rgba(40, 28, 70, 0.86), var(--window));
+    border: 2px solid var(--window-line);
+    border-radius: 18px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(255, 126, 182, 0.08);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    animation: windowIn 0.35s ease;
+}
+@keyframes windowIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+#name-plate {
+    position: absolute;
+    top: 0;
+    left: clamp(18px, 3vw, 40px);
+    transform: translateY(-55%);
+    padding: 6px 26px;
+    background: linear-gradient(90deg, var(--pink-deep), var(--pink));
+    border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(233, 79, 147, 0.5);
+    font-size: clamp(16px, 2.2vw, 22px);
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+#name-plate.unknown { background: linear-gradient(90deg, #4b3a7a, #7a63c4); box-shadow: 0 4px 14px rgba(122, 99, 196, 0.5); }
+
+#message-text {
+    font-size: clamp(18px, 2.4vw, 27px);
+    line-height: 1.75;
+    font-weight: 500;
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#next-mark {
+    position: absolute;
+    right: 30px;
+    bottom: 40px;
+    font-size: 18px;
+    color: var(--pink);
+    opacity: 0;
+}
+#message-box.done #next-mark { opacity: 1; animation: bounce 1s ease-in-out infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+#quick-menu {
+    position: absolute;
+    right: 18px;
+    bottom: 8px;
     display: flex;
-    justify-content: center;
+    gap: 4px;
+}
+#quick-menu button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    padding: 4px 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+}
+#quick-menu button:hover { color: var(--pink); }
+
+/* 中央の赤枠演出 */
+#message-layer.center-mode { align-items: center; padding-bottom: 0; }
+#message-layer.center-mode #message-box {
+    min-height: clamp(220px, 40vh, 320px);
+    display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--center-window);
+    border-color: var(--center-line);
+    box-shadow: 0 0 40px rgba(255, 77, 109, 0.35);
 }
+#message-layer.center-mode #message-text { font-size: clamp(22px, 3.4vw, 42px); font-weight: 700; }
 
-/* 背景レイヤー（シーンごとに美しいグラデーションが切り替わります） */
-#background-layer {
+/* ---------------- 画面共通 ---------------- */
+.screen {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    transition: background 0.8s ease-in-out;
-}
-
-/* --- アニメーション --- */
-.fade-in {
-    animation: fadeInAnimation 2s ease-in-out forwards;
-}
-
-@keyframes fadeInAnimation {
-    0% {
-        opacity: 0;
-        transform: scale(0.98);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-/* --- UI画面共通スタイル --- */
-.ui-screen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.4);
-    color: white;
+    gap: 24px;
     padding: 20px;
-    z-index: 10;
+    background: rgba(0, 0, 0, 0.35);
+    animation: fadeIn 0.6s ease;
 }
+#title-layer { background: transparent; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* --- 1. タイトル画面 --- */
 #game-logo {
-    width: 60%;
-    max-width: 380px;
-    max-height: 25vh;
-    height: auto;
+    width: min(60vw, 400px);
+    max-height: 30vh;
     object-fit: contain;
-    margin-bottom: 30px;
-    filter: drop-shadow(0px 8px 25px rgba(255, 105, 180, 0.3));
+    filter: drop-shadow(0 8px 25px rgba(255, 105, 180, 0.45));
+    animation: logoIn 1.6s ease both, float 6s ease-in-out 1.6s infinite;
 }
+@keyframes logoIn { from { opacity: 0; transform: translateY(-20px) scale(0.96); filter: blur(8px); } to { opacity: 1; transform: none; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
 .menu-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    width: 100%;
-    max-width: 280px;
+    gap: 12px;
+    width: min(280px, 80vw);
 }
+.menu-container .menu-btn { animation: fadeUp 0.6s ease both; }
+.menu-container .menu-btn:nth-child(1) { animation-delay: 0.8s; }
+.menu-container .menu-btn:nth-child(2) { animation-delay: 0.9s; }
+.menu-container .menu-btn:nth-child(3) { animation-delay: 1.0s; }
+.menu-container .menu-btn:nth-child(4) { animation-delay: 1.1s; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
 .menu-btn {
-    width: 100%;
-    padding: 14px 0;
-    font-size: 1.2rem;
-    font-weight: bold;
-    letter-spacing: 2px;
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 2px solid #ffffff;
-    border-radius: 30px;
+    padding: 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    border-radius: 999px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.25s ease;
+    backdrop-filter: blur(3px);
 }
-
-.menu-btn:hover {
-    background-color: #ffffff;
-    color: #111111;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+.menu-btn:hover:not(:disabled) {
+    background: linear-gradient(90deg, var(--pink-deep), var(--pink));
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 126, 182, 0.5);
 }
+.menu-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.menu-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    border-color: #666666;
-    color: #666666;
-    transform: none;
-    box-shadow: none;
-}
+.title-hint { font-size: 12px; color: rgba(255, 255, 255, 0.5); letter-spacing: 1px; text-align: center; animation: fadeUp 0.6s ease 1.3s both; }
 
-/* 音量コントロールUI */
-.volume-container {
-    margin-top: 30px;
+.panel {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 12px 24px;
+    gap: 20px;
+    padding: 36px 40px;
+    background: var(--window);
+    border: 2px solid var(--window-line);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
-
-.volume-label {
-    font-size: 0.9rem;
-    color: #ffffff;
-    letter-spacing: 1px;
-}
-
-#volume-slider {
-    width: 180px;
-    cursor: pointer;
-    accent-color: #ff69b4;
-}
-
-/* --- 1.5. 名前入力画面 --- */
-#name-input-title {
-    font-size: 38px;
-    margin-bottom: 25px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.name-input-container {
-    display: flex;
-    gap: 15px;
-    align-items: center;
+.panel-title, #question-text {
+    font-size: clamp(24px, 3.6vw, 40px);
+    text-align: center;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .name-input {
-    font-size: 24px;
+    font-family: inherit;
+    font-size: 22px;
     padding: 12px 20px;
-    border-radius: 8px;
-    border: 2px solid white;
-    background-color: #222;
-    color: white;
+    width: min(300px, 70vw);
+    text-align: center;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
     outline: none;
-    width: 280px;
-    text-align: center;
+    user-select: text;
 }
+.name-input:focus { border-color: var(--pink); box-shadow: 0 0 0 4px rgba(255, 126, 182, 0.25); }
 
-.name-input:focus {
-    border-color: #ff69b4;
-}
-
-/* --- 2. 質問画面 --- */
-#question-text {
-    font-size: 40px;
-    margin-bottom: 30px;
-    text-align: center;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.button-container {
-    display: flex;
-    gap: 20px;
-}
-
+.button-container { display: flex; gap: 20px; }
 .choice-btn {
-    font-size: 26px;
-    font-weight: bold;
-    padding: 15px 40px;
-    border-radius: 8px;
-    border: 2px solid white;
-    background-color: #333;
-    color: white;
+    font-size: clamp(18px, 2.4vw, 24px);
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 12px 44px;
+    color: #fff;
+    background: rgba(30, 20, 55, 0.85);
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    border-radius: 999px;
     cursor: pointer;
-    transition: transform 0.1s, background-color 0.2s;
+    transition: all 0.2s ease;
 }
+.choice-btn:hover { background: linear-gradient(90deg, var(--pink-deep), var(--pink)); border-color: transparent; transform: scale(1.05); }
+.choice-btn.small { font-size: 16px; padding: 8px 32px; }
 
-.choice-btn:hover {
-    background-color: #555;
-    transform: scale(1.05);
-}
+.end-text { font-size: clamp(24px, 4vw, 44px); letter-spacing: 8px; animation: fadeIn 2s ease; text-shadow: 0 0 20px rgba(255, 126, 182, 0.7); }
 
-/* --- 3. メッセージレイヤー --- */
-#message-layer {
+/* ---------------- オーバーレイ（ログ・セーブ・設定） ---------------- */
+.overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
-    padding-bottom: 50px;
-    z-index: 20;
-}
-
-#message-box {
-    width: 90%;
-    max-width: 1100px;
-    height: 250px;
-    background-color: rgba(0, 0, 30, 0.9);
-    border: 5px solid white;
-    border-radius: 15px;
-    padding: 30px 50px;
-    box-sizing: border-box;
-    color: white;
-    font-size: 36px;
-    line-height: 1.5;
-    font-weight: bold;
-    position: relative;
-    cursor: pointer;
-    white-space: pre-wrap;
-    word-break: break-word;
-
+    inset: 0;
+    z-index: 50;
     display: flex;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.9);
-    box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
+    padding: 16px;
+    background: rgba(8, 4, 20, 0.78);
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.25s ease;
 }
-
-.blink-mark {
-    position: absolute;
-    bottom: 20px;
-    right: 30px;
-    font-size: 28px;
-    animation: blink 1s infinite;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
-
-#message-layer.center-mode {
-    justify-content: center;
-    padding-bottom: 0;
-}
-
-#message-layer.center-mode #message-box {
-    font-size: 48px;
-    height: 320px;
-    border-color: #ff4d4d;
-    background-color: rgba(30, 0, 0, 0.95);
-}
-
-/* --- 4. まぶたの開閉演出 --- */
-.eyelid-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 25;
+.overlay-inner {
+    width: min(1000px, 100%);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(30, 22, 55, 0.95);
+    border: 2px solid var(--window-line);
+    border-radius: 18px;
     overflow: hidden;
-    display: none;
 }
+.overlay-inner.narrow { width: min(560px, 100%); }
+.overlay-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.overlay-head h2 { font-size: 22px; letter-spacing: 4px; color: var(--pink); }
+.close-btn {
+    font-size: 14px;
+    padding: 6px 18px;
+    color: #fff;
+    background: none;
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    cursor: pointer;
+}
+.close-btn:hover { border-color: var(--pink); color: var(--pink); }
 
+#log-list { list-style: none; overflow-y: auto; padding: 12px 24px 24px; }
+#log-list li { padding: 12px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.12); line-height: 1.7; }
+#log-list .log-name { display: block; font-size: 14px; font-weight: 700; color: var(--pink); }
+#log-list .log-text { white-space: pre-wrap; font-size: 17px; }
+
+#slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    padding: 20px 24px 24px;
+    overflow-y: auto;
+}
+.slot {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    text-align: left;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.slot:hover:not(:disabled) { border-color: var(--pink); background: rgba(255, 126, 182, 0.12); }
+.slot:disabled { opacity: 0.45; cursor: not-allowed; }
+.slot-thumb {
+    flex: 0 0 120px;
+    height: 68px;
+    border-radius: 8px;
+    background: #222 center / cover no-repeat;
+}
+.slot-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.slot-no { font-size: 13px; font-weight: 700; color: var(--pink); }
+.slot-date { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.slot-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.config-row { display: flex; flex-direction: column; gap: 10px; padding: 18px 24px; }
+.config-row label { font-size: 16px; font-weight: 700; }
+.config-row input[type=range] { width: 100%; accent-color: var(--pink); cursor: pointer; }
+.segmented { display: flex; gap: 6px; flex-wrap: wrap; }
+.segmented button {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 14px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.segmented button.selected { background: linear-gradient(90deg, var(--pink-deep), var(--pink)); border-color: transparent; }
+
+.dialog {
+    padding: 28px 36px;
+    text-align: center;
+    background: rgba(30, 22, 55, 0.97);
+    border: 2px solid var(--window-line);
+    border-radius: 16px;
+}
+.dialog p { margin-bottom: 20px; font-size: 18px; white-space: pre-wrap; }
+#confirm-layer { z-index: 60; }
+
+/* ---------------- 演出レイヤー ---------------- */
+#flash-layer, #black-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 40;
+}
+#flash-layer { background: #fff; }
+#flash-layer.go { animation: flash 0.5s ease-out; }
+@keyframes flash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+#black-layer { background: #000; transition: opacity 0.7s ease; }
+#black-layer.on { opacity: 1; pointer-events: auto; }
+
+#eyelid-layer { position: absolute; inset: 0; pointer-events: none; z-index: 41; display: none; }
+#eyelid-layer.active { display: block; pointer-events: auto; }
 .eyelid-top, .eyelid-bottom {
     position: absolute;
     left: 0;
     width: 100%;
     height: 50%;
-    background-color: #000000;
-    transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+    background: #000;
+    transition: transform 1.6s cubic-bezier(0.77, 0, 0.175, 1);
+}
+.eyelid-top { top: 0; border-radius: 0 0 50% 50% / 0 0 30% 30%; }
+.eyelid-bottom { bottom: 0; border-radius: 50% 50% 0 0 / 30% 30% 0 0; }
+#eyelid-layer.open .eyelid-top { transform: translateY(-105%); }
+#eyelid-layer.open .eyelid-bottom { transform: translateY(105%); }
+#stage.blur { filter: blur(8px); }
+#stage { transition: filter 1.6s ease; }
+
+#toast {
+    position: absolute;
+    left: 50%;
+    top: 24px;
+    transform: translateX(-50%);
+    z-index: 70;
+    padding: 10px 24px;
+    font-size: 15px;
+    background: rgba(233, 79, 147, 0.92);
+    border-radius: 999px;
+    animation: fadeIn 0.2s ease;
 }
 
-.eyelid-top {
-    top: 0;
-    transform: translateY(0);
+@media (prefers-reduced-motion: reduce) {
+    .bg-layer, #chara-img.shown, #game-logo { animation: none !important; }
 }
 
-.eyelid-bottom {
-    bottom: 0;
-    transform: translateY(0);
+/* 立ち絵の反応（表情が変わったとき小さく跳ねる） */
+#chara-layer.react { animation: react 0.45s ease; }
+@keyframes react {
+    0%, 100% { transform: translateY(0); }
+    35% { transform: translateY(-14px); }
+    65% { transform: translateY(2px); }
 }
-
-.eyelid-container.open .eyelid-top {
-    transform: translateY(-100%);
-}
-
-.eyelid-container.open .eyelid-bottom {
-    transform: translateY(100%);
-}

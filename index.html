@@ -4,70 +4,141 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>恋色パレット</title>
-    <!-- 外部CSSファイルの読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <!-- 背景レイヤー（シーンごとにグラデーションが切り替わる） -->
-        <div id="background-layer"></div>
-        
-        <!-- BGM用オーディオ要素 -->
         <audio id="bgm-title" src="./audio/bgm_title.mp3" loop preload="auto"></audio>
-        <!-- 本編BGM（ゲーム開始後） -->
         <audio id="bgm-main" src="./audio/bgm_main.mp3" loop preload="none"></audio>
 
-        <!-- 1. タイトル画面 -->
-        <div id="title-layer" class="ui-screen fade-in">
-            <img id="game-logo" src="images/logo.png" alt="恋色パレット">
-            
-            <div class="menu-container">
-                <button id="btn-start" class="menu-btn">ゲーム開始</button>
-                <button id="btn-load" class="menu-btn">つづきから</button>
-                <button id="btn-exit" class="menu-btn">終了</button>
+        <!-- ===== 舞台（揺れ演出はここ全体にかかる） ===== -->
+        <div id="stage">
+            <div class="bg-layer" id="bg-a"></div>
+            <div class="bg-layer" id="bg-b"></div>
+            <div id="bg-vignette"></div>
+            <canvas id="fx-canvas"></canvas>
+
+            <div id="chara-layer">
+                <img id="chara-img" alt="">
             </div>
 
-            <!-- 音量コントロール（初期値 10%） -->
-            <div class="volume-container">
-                <label for="volume-slider" class="volume-label">🎵 BGM音量: <span id="volume-value">10%</span></label>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.1">
+            <!-- メッセージウィンドウ -->
+            <div id="message-layer" hidden>
+                <div id="message-box">
+                    <div id="name-plate" hidden><span id="name-text"></span></div>
+                    <p id="message-text"></p>
+                    <span id="next-mark">▼</span>
+                    <nav id="quick-menu">
+                        <button data-action="log">ログ</button>
+                        <button data-action="save">セーブ</button>
+                        <button data-action="load">ロード</button>
+                        <button data-action="config">設定</button>
+                        <button data-action="title">タイトル</button>
+                    </nav>
+                </div>
             </div>
         </div>
 
-        <!-- 1.5. 名前入力画面 -->
-        <div id="name-input-layer" class="ui-screen" style="display: none;">
-            <h2 id="name-input-title">あなたの名前はなんですか？</h2>
-            <div class="name-input-container">
-                <input type="text" id="player-name-input" class="name-input" placeholder="名前を入力">
+        <!-- ===== タイトル ===== -->
+        <div id="title-layer" class="screen">
+            <img id="game-logo" src="images/logo.png" alt="恋色パレット">
+            <div class="menu-container">
+                <button id="btn-start" class="menu-btn">はじめから</button>
+                <button id="btn-load" class="menu-btn">つづきから</button>
+                <button id="btn-config" class="menu-btn">設定</button>
+                <button id="btn-exit" class="menu-btn">終了</button>
+            </div>
+            <p class="title-hint">クリック / Enter で進む ・ 右クリックでウィンドウ非表示 ・ ホイール上でログ</p>
+        </div>
+
+        <!-- ===== 名前入力 ===== -->
+        <div id="name-input-layer" class="screen" hidden>
+            <div class="panel">
+                <h2 class="panel-title">あなたの名前は?</h2>
+                <input type="text" id="player-name-input" class="name-input" placeholder="名前を入力" maxlength="10">
                 <button id="btn-name-submit" class="choice-btn">決定</button>
             </div>
         </div>
 
-        <!-- 2. 質問画面 -->
-        <div id="question-layer" class="ui-screen" style="display: none;">
-            <h2 id="question-text">あなたには彼女がいますか？</h2>
+        <!-- ===== 質問 ===== -->
+        <div id="question-layer" class="screen" hidden>
+            <h2 id="question-text"></h2>
             <div class="button-container">
                 <button id="btn-yes" class="choice-btn">はい</button>
                 <button id="btn-no" class="choice-btn">いいえ</button>
             </div>
         </div>
 
-        <!-- 3. メッセージ用テキストボックス -->
-        <div id="message-layer" style="display: none;">
-            <div id="message-box">
-                <span id="message-text"></span>
-                <span class="blink-mark">▼</span>
+        <!-- ===== 区切り（本編へ続く） ===== -->
+        <div id="end-layer" class="screen" hidden>
+            <p class="end-text">― 本編へ続く ―</p>
+            <button id="btn-end-title" class="choice-btn">タイトルへ</button>
+        </div>
+
+        <!-- ===== バックログ ===== -->
+        <div id="log-layer" class="overlay" hidden>
+            <div class="overlay-inner">
+                <header class="overlay-head"><h2>バックログ</h2><button class="close-btn" data-close>閉じる</button></header>
+                <ol id="log-list"></ol>
             </div>
         </div>
 
-
-        <!-- 4. まぶた開閉アニメーション用レイヤー -->
-        <div id="eyelid-layer" class="eyelid-container">
-            <div class="eyelid-top"></div>
-            <div class="eyelid-bottom"></div>
+        <!-- ===== セーブ / ロード ===== -->
+        <div id="slot-layer" class="overlay" hidden>
+            <div class="overlay-inner">
+                <header class="overlay-head"><h2 id="slot-title">セーブ</h2><button class="close-btn" data-close>閉じる</button></header>
+                <div id="slot-grid"></div>
+            </div>
         </div>
+
+        <!-- ===== 設定 ===== -->
+        <div id="config-layer" class="overlay" hidden>
+            <div class="overlay-inner narrow">
+                <header class="overlay-head"><h2>設定</h2><button class="close-btn" data-close>閉じる</button></header>
+                <div class="config-row">
+                    <label for="cfg-volume">BGM音量 <span id="cfg-volume-value"></span></label>
+                    <input type="range" id="cfg-volume" min="0" max="1" step="0.01">
+                </div>
+                <div class="config-row">
+                    <label>文字の速さ</label>
+                    <div class="segmented" id="cfg-speed">
+                        <button data-speed="slow">遅い</button>
+                        <button data-speed="normal">普通</button>
+                        <button data-speed="fast">速い</button>
+                        <button data-speed="instant">瞬間</button>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <label>画面の揺れ・フラッシュ</label>
+                    <div class="segmented" id="cfg-fx">
+                        <button data-fx="on">オン</button>
+                        <button data-fx="off">オフ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 確認ダイアログ ===== -->
+        <div id="confirm-layer" class="overlay" hidden>
+            <div class="dialog">
+                <p id="confirm-text"></p>
+                <div class="button-container">
+                    <button id="confirm-yes" class="choice-btn small">はい</button>
+                    <button id="confirm-no" class="choice-btn small">いいえ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 演出用 ===== -->
+        <div id="flash-layer"></div>
+        <div id="black-layer"></div>
+        <div id="eyelid-layer"><div class="eyelid-top"></div><div class="eyelid-bottom"></div></div>
+        <div id="toast" hidden></div>
     </div>
-    
+
     <script type="module" src="src/main.js"></script>
 </body>
-</html>
+</html>

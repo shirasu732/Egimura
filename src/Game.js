@@ -1,309 +1,192 @@
-// 画像背景の書き方（中央に合わせて画面いっぱいに表示）
-const img = (file) => `url("images/${file}") center / cover no-repeat #000`;
+// ============================================================
+//  ゲーム全体のまとめ役：画面の流れと操作の受け付け
+//  細かい処理は src/engine/ 以下のファイルに分けている
+// ============================================================
+import { BgmPlayer } from "./engine/BgmPlayer.js";
+import { Stage } from "./engine/Stage.js";
+import { TextBox } from "./engine/TextBox.js";
+import { Story } from "./engine/Story.js";
+import { loadConfig, hasAnySave } from "./engine/Storage.js";
+import { Backlog } from "./engine/ui/Backlog.js";
+import { SaveMenu } from "./engine/ui/SaveMenu.js";
+import { ConfigMenu } from "./engine/ui/ConfigMenu.js";
+import { initOverlays, isOverlayOpen, closeTopOverlay, confirmDialog } from "./engine/ui/Overlay.js";
 
-// シーンごとの背景
-const BG = {
-    title: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)",   // タイトル
-    question: img("bg_question.jpg"),                               // 質問（夜の住宅街）
-    god: img("bg_god.jpg"),                                         // 女神空間
-    room: img("bg_room.jpg")                                        // 新しい部屋
-};
-
-// 画像を先に読み込んでおき、切り替え時のちらつきを防ぐ
-["bg_question.jpg", "bg_god.jpg", "bg_room.jpg"].forEach((file) => {
-    new Image().src = `images/${file}`;
-});
-
-// オープニングの会話データ
-// bg: 背景 / center: 中央の赤枠表示 / eyelid: 表示前にまぶたが開く演出を入れる
-// 会話を増やすときはここに1行足すだけでOK
-const OPENING = [
-    { bg: "question", center: false, text: "いないのは知ってるwwwww\n彼女ができるわけないもんなwwwwwwww" },
-    { bg: "question", center: true, text: "あまりに鋭いちくちく言葉が心に刺さったことが致命傷となり、俺の意識は暗闇へと沈んでいった。" },
-    { bg: "god", center: true, text: "???「………………ふむ。これはまた、随分と珍妙な死に方をしたものじゃな」" },
-    { bg: "god", center: true, text: "主人公「………………誰?」" },
-    { bg: "god", center: true, text: "女神「妾は恋愛を司る女神じゃ」\n女神「しかし、恋人ができぬと言われた程度で死ぬとは･･････くくっ、愉快な奴よ」" },
-    { bg: "god", center: true, text: "主人公「笑い事じゃないんだけど!?」" },
-    { bg: "god", center: true, text: "女神「しかも恋愛経験は皆無、と。･･････なるほど、哀れじゃな」" },
-    { bg: "god", center: true, text: "主人公「追い打ちかけるのやめてくれる? もう一回死ぬよ?」" },
-    { bg: "god", center: true, text: "女神「ふむ…………･･よし、決めた。お前にもう一度、青春をくれてやろう」" },
-    { bg: "god", center: true, text: "主人公「･･････は?」" },
-    { bg: "god", center: true, text: "女神「高校二年生、転入生。始業式は明日じゃ。住む場所も生活の面倒も見てやる」" },
-    { bg: "god", center: true, text: "主人公「いや、勝手に決めるなって!」" },
-    { bg: "god", center: true, text: "女神「なに、難しいことはない。今度こそ恋人の一人でも作ってみせよ」" },
-    { bg: "god", center: true, text: "主人公「だから話を――」" },
-    { bg: "god", center: true, text: "女神「では、妾を退屈させるでないぞ?」" },
-    { bg: "room", center: false, eyelid: true, text: "目が覚めると見知らぬ天井が目に映る。\nどうやら、本当に転生したらしい。" },
-    { bg: "room", center: false, text: "机の上には、学生証と転入手続きの書類。\nそして荷解き途中と思しき段ボールの山。" },
-    { bg: "room", center: false, text: "高校二年生、明日から転入･･･ 。\nあの女神、言っていたことは本当だったのか。" },
-    { bg: "room", center: false, text: "玄関には、引っ越しの挨拶用らしい菓子折りが置かれている。\nその上には一枚のメモ。" },
-    { bg: "room", center: false, text: "『近所への挨拶くらいはしておけ。人付き合いは恋愛の基本じゃぞ』" },
-    { bg: "room", center: false, text: "『追伸:まあ、お前には難しいかもしれぬがな』" },
-    { bg: "room", center: false, text: "主人公「………………最後まで余計なお世話だ!」" },
-    { bg: "room", center: false, text: "とはいえ、これから暮らす場所だ。\n挨拶くらいはしておこう。" }
-];
+const $ = (id) => document.getElementById(id);
 
 export class Game {
     constructor() {
-        this.SAVE_KEY = "koiiro_palette_save";
-        this.VOLUME_KEY = "koiiro_palette_volume";
-
-        // 内部音量倍率（0.5 = スライダー値の半分の音量で鳴らす）
-        this.bgmFactor = 0.5;
-
+        this.mode = "title";     // title / name / question / story / end
         this.playerName = "";
+        this.config = loadConfig();
 
-        // 進行状態: "retry" / "opening" / "start_game"
-        this.nextAction = "";
-        this.openingIndex = 0;
-        this.isAnimating = false;
-
-        const $ = (id) => document.getElementById(id);
-
-        // 画面レイヤー
-        this.backgroundLayer = $("background-layer");
-        this.titleLayer = $("title-layer");
-        this.nameInputLayer = $("name-input-layer");
-        this.questionLayer = $("question-layer");
-        this.messageLayer = $("message-layer");
-        this.eyelidLayer = $("eyelid-layer");
-
-        // 要素
-        this.messageBox = $("message-box");
-        this.messageText = $("message-text");
-        this.questionText = $("question-text");
-        this.playerNameInput = $("player-name-input");
-        this.btnNameSubmit = $("btn-name-submit");
-        this.btnStart = $("btn-start");
-        this.btnLoad = $("btn-load");
-        this.btnExit = $("btn-exit");
-        this.btnYes = $("btn-yes");
-        this.btnNo = $("btn-no");
-        this.volumeSlider = $("volume-slider");
-        this.volumeValueText = $("volume-value");
-        this.bgmTitle = $("bgm-title");
-        this.bgmMain = $("bgm-main");
-        this.bgm = this.bgmTitle;   // 今鳴らしているBGM
-
-        // 音量設定の読み込み
-        const savedVolume = localStorage.getItem(this.VOLUME_KEY);
-        this.currentVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.1;
-        this.applyVolume();
-
-        this.initEvents();
-        this.initVolumeUI();
-        this.setBackground("title");
-    }
-
-    // 背景を切り替える
-    setBackground(name) {
-        this.backgroundLayer.style.background = BG[name];
-    }
-
-    // 実際の音量を適用
-    applyVolume() {
-        const vol = this.currentVolume * this.bgmFactor;
-        this.bgmTitle.volume = vol;
-        this.bgmMain.volume = vol;
-    }
-
-    // イベント登録
-    initEvents() {
-        // 最初の操作でBGMを開始（ブラウザの自動再生制限対策）
-        document.addEventListener("pointerdown", () => this.startBGM());
-
-        this.btnStart.addEventListener("click", () => this.showNameInputScreen());
-        this.btnLoad.addEventListener("click", () => this.loadGame());
-        this.btnExit.addEventListener("click", () => this.exitGame());
-
-        this.btnNameSubmit.addEventListener("click", () => this.submitPlayerName());
-        this.playerNameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.isComposing) this.submitPlayerName();
+        this.bgm = new BgmPlayer({ title: $("bgm-title"), main: $("bgm-main") });
+        this.bgm.setVolume(this.config.volume);
+        this.stage = new Stage(this.config);
+        this.textBox = new TextBox(this.config);
+        this.backlog = new Backlog();
+        this.story = new Story({
+            stage: this.stage,
+            textBox: this.textBox,
+            backlog: this.backlog,
+            getName: () => this.playerName || "主人公",
+            onEnd: () => this.showEnd()
         });
-
-        this.btnYes.addEventListener("click", () => this.handleAnswer(true));
-        this.btnNo.addEventListener("click", () => this.handleAnswer(false));
-
-        this.messageBox.addEventListener("click", () => this.handleNextMessage());
-    }
-
-    // 音量スライダーの初期化
-    initVolumeUI() {
-        this.volumeSlider.value = this.currentVolume;
-        this.volumeValueText.innerText = `${Math.round(this.currentVolume * 100)}%`;
-        this.volumeSlider.addEventListener("input", (e) => {
-            this.setVolume(parseFloat(e.target.value));
+        this.saveMenu = new SaveMenu({
+            getSaveData: () => ({ ...this.story.getSaveData(), playerName: this.playerName }),
+            onLoad: (data) => this.loadGame(data),
+            isPlaying: () => this.mode === "story"
         });
-    }
+        this.configMenu = new ConfigMenu(this.config, (v) => this.bgm.setVolume(v));
 
-    setVolume(vol) {
-        this.currentVolume = vol;
-        this.applyVolume();
-        this.volumeValueText.innerText = `${Math.round(vol * 100)}%`;
-        localStorage.setItem(this.VOLUME_KEY, vol);
-    }
-
-    startBGM() {
-        if (this.bgm.paused) {
-            this.bgm.play().catch(() => { /* 操作待ち */ });
-        }
-    }
-
-    stopBGM() {
-        this.bgm.pause();
-        this.bgm.currentTime = 0;
-    }
-
-    // 本編BGMに切り替え（タイトル曲は止める）
-    switchToMainBGM() {
-        if (this.bgm === this.bgmMain) return;
-        this.stopBGM();
-        this.bgm = this.bgmMain;
-        this.startBGM();
-    }
-
-    // 全レイヤー非表示
-    hideAllLayers() {
-        this.titleLayer.style.display = "none";
-        this.nameInputLayer.style.display = "none";
-        this.questionLayer.style.display = "none";
-        this.messageLayer.style.display = "none";
-        this.eyelidLayer.style.display = "none";
-    }
-
-    // 名前入力画面
-    showNameInputScreen() {
-        this.switchToMainBGM();
-        this.hideAllLayers();
-        this.setBackground("title");
-        this.playerNameInput.value = "";
-        this.nameInputLayer.style.display = "flex";
-        this.playerNameInput.focus();
-    }
-
-    submitPlayerName() {
-        const inputVal = this.playerNameInput.value.trim();
-        if (inputVal !== "") {
-            this.playerName = inputVal;
-        }
-        this.showQuestion();
-    }
-
-    // 質問画面
-    showQuestion() {
-        this.hideAllLayers();
-        this.setBackground("question");
-        this.questionText.innerText = `${this.playerName}には彼女がいますか？`;
-        this.questionLayer.style.display = "flex";
-    }
-
-    // メッセージ表示
-    showMessage(text, actionType, isCenter = false) {
-        this.hideAllLayers();
-        this.messageText.innerText = text;
-        this.messageLayer.classList.toggle("center-mode", isCenter);
-        this.messageLayer.style.display = "flex";
-        this.nextAction = actionType;
-    }
-
-    // 選択肢分岐
-    handleAnswer(hasGirlfriend) {
-        if (hasGirlfriend) {
-            this.setBackground("question");
-            this.showMessage("ウソなのわかってるから\nおとなしく「いいえ」を選べってw", "retry", true);
-        } else {
-            this.saveGame({ playerName: this.playerName, hasGirlfriend: false, sceneId: "オープニング開始" });
-            this.openingIndex = 0;
-            this.showOpeningLine();
-        }
-    }
-
-    // オープニングの現在の行を表示
-    showOpeningLine() {
-        const line = OPENING[this.openingIndex];
-        const show = () => {
-            this.setBackground(line.bg);
-            this.showMessage(line.text, "opening", line.center);
-        };
-        if (line.eyelid) {
-            this.setBackground(line.bg);
-            this.playEyelidOpenAnimation(show);
-        } else {
-            show();
-        }
-    }
-
-    // メッセージ進行
-    handleNextMessage() {
-        if (this.isAnimating) return;
-
-        if (this.nextAction === "retry") {
-            this.showQuestion();
-        } else if (this.nextAction === "opening") {
-            this.openingIndex++;
-            if (this.openingIndex < OPENING.length) {
-                this.showOpeningLine();
-            } else {
-                this.startMainGame();
-            }
-        } else if (this.nextAction === "start_game") {
-            this.startMainGame();
-        }
-    }
-
-    // 本編開始（未実装）
-    startMainGame() {
-        this.hideAllLayers();
-        console.log("ゲーム本編を開始します");
-    }
-
-    // まぶたが開く演出
-    playEyelidOpenAnimation(callback) {
-        this.isAnimating = true;
-        this.hideAllLayers();
-        this.eyelidLayer.style.display = "block";
-        this.eyelidLayer.classList.remove("open");
-
-        setTimeout(() => this.eyelidLayer.classList.add("open"), 200);
-        setTimeout(() => {
-            this.eyelidLayer.style.display = "none";
-            this.eyelidLayer.classList.remove("open");
-            this.isAnimating = false;
-            callback();
-        }, 1700);
-    }
-
-    // セーブの有無で「つづきから」を有効/無効化
-    checkSaveData() {
-        this.btnLoad.disabled = !localStorage.getItem(this.SAVE_KEY);
-    }
-
-    saveGame(state) {
-        localStorage.setItem(this.SAVE_KEY, JSON.stringify(state));
-        this.checkSaveData();
-    }
-
-    loadGame() {
-        const data = localStorage.getItem(this.SAVE_KEY);
-        if (!data) return;
-        this.switchToMainBGM();
-        const saveData = JSON.parse(data);
-        if (saveData.playerName) {
-            this.playerName = saveData.playerName;
-        }
-        this.setBackground("room");
-        this.showMessage(`セーブデータを読み込みました。\n（プレイヤー: ${this.playerName}）`, "start_game", false);
-    }
-
-    exitGame() {
-        if (confirm("ゲームを終了しますか？")) {
-            this.stopBGM();
-            this.titleLayer.innerHTML = "<h2 style='color: white;'>プレイありがとうございました！<br>タブを閉じて終了してください。</h2>";
-        }
+        this.screens = { title: $("title-layer"), name: $("name-input-layer"), question: $("question-layer"), end: $("end-layer") };
+        initOverlays();
+        this.bindEvents();
     }
 
     start() {
-        this.checkSaveData();
+        this.showTitle();
         console.log("『恋色パレット』が起動しました。");
+    }
+
+    // ============================================================
+    //  操作の受け付け
+    // ============================================================
+    bindEvents() {
+        const on = (id, fn) => $(id).addEventListener("click", fn);
+        on("btn-start", () => this.showNameInput());
+        on("btn-load", () => this.saveMenu.open("load"));
+        on("btn-config", () => this.configMenu.open());
+        on("btn-exit", () => this.exitGame());
+        on("btn-name-submit", () => this.submitName());
+        on("btn-yes", () => this.answer(true));
+        on("btn-no", () => this.answer(false));
+        on("btn-end-title", () => this.returnToTitle());
+
+        $("player-name-input").addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter" && !ev.isComposing) this.submitName();
+        });
+
+        const stage = $("stage");
+        stage.addEventListener("click", () => this.advance());
+        stage.addEventListener("contextmenu", (ev) => {
+            if (this.mode !== "story") return;
+            ev.preventDefault();
+            this.textBox.toggle();
+        });
+        stage.addEventListener("wheel", (ev) => {
+            if (this.mode === "story" && ev.deltaY < 0 && !isOverlayOpen()) this.backlog.open();
+        }, { passive: true });
+
+        document.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape") return closeTopOverlay();
+            if (ev.key === "Enter" || ev.key === " ") {
+                if (this.mode !== "story" || isOverlayOpen()) return;
+                ev.preventDefault();
+                this.advance();
+            }
+        });
+
+        // メッセージウィンドウ右下のメニュー
+        $("quick-menu").addEventListener("click", (ev) => {
+            ev.stopPropagation();   // 文章が進まないように
+            const actions = {
+                log: () => this.backlog.open(),
+                save: () => this.saveMenu.open("save"),
+                load: () => this.saveMenu.open("load"),
+                config: () => this.configMenu.open(),
+                title: () => this.confirmReturnToTitle()
+            };
+            actions[ev.target.dataset.action]?.();
+        });
+    }
+
+    advance() {
+        if (this.mode !== "story" || isOverlayOpen()) return;
+        if (this.textBox.hiddenByUser) return this.textBox.toggle();
+        this.story.advance();
+    }
+
+    // ============================================================
+    //  画面の流れ
+    // ============================================================
+    showScreen(name) {
+        this.mode = name;
+        Object.entries(this.screens).forEach(([key, el]) => { el.hidden = key !== name; });
+    }
+
+    showTitle() {
+        this.showScreen("title");
+        this.textBox.hide();
+        this.stage.apply({ bg: "title", chara: null, particles: "title" });
+        $("btn-load").disabled = !hasAnySave();
+    }
+
+    async returnToTitle() {
+        await this.stage.fadeBlack(() => {
+            this.bgm.play("title");
+            this.showTitle();
+        });
+    }
+
+    async confirmReturnToTitle() {
+        if (await confirmDialog("タイトルに戻りますか?\n(セーブしていない進行は失われます)")) this.returnToTitle();
+    }
+
+    showNameInput() {
+        this.bgm.play("main");
+        this.showScreen("name");
+        const input = $("player-name-input");
+        input.value = this.playerName;
+        input.focus();
+    }
+
+    submitName() {
+        this.playerName = $("player-name-input").value.trim();
+        this.showQuestion();
+    }
+
+    showQuestion() {
+        this.showScreen("question");
+        this.textBox.hide();
+        this.stage.apply({ bg: "question", particles: "none" });
+        $("question-text").textContent = `${this.playerName || "主人公"}には彼女がいますか?`;
+    }
+
+    answer(hasGirlfriend) {
+        this.showScreen("story");
+        if (hasGirlfriend) {
+            // 「はい」は煽られて質問に戻る
+            this.story.showExtra(
+                { style: "center", fx: "shake", text: "ウソなのわかってるから\nおとなしく「いいえ」を選べってw" },
+                () => this.showQuestion()
+            );
+        } else {
+            this.story.start();
+        }
+    }
+
+    showEnd() {
+        this.stage.fadeBlack(() => {
+            this.showScreen("end");
+            this.textBox.hide();
+            this.stage.apply({ bg: "title", chara: null, particles: "title" });
+        });
+    }
+
+    loadGame(data) {
+        this.stage.fadeBlack(() => {
+            this.bgm.play("main");
+            this.playerName = data.playerName || "";
+            this.showScreen("story");
+            this.story.loadAt(data.index);
+        });
+    }
+
+    async exitGame() {
+        if (!(await confirmDialog("ゲームを終了しますか?"))) return;
+        this.bgm.stop();
+        this.stage.particles.set("none");
+        this.screens.title.innerHTML = "<p class='end-text'>プレイありがとうございました</p><p class='title-hint'>タブを閉じて終了してください</p>";
     }
 }
