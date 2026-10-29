@@ -9,13 +9,11 @@
 </head>
 <body>
     <div id="game-container">
-        <!-- フルスクリーン描画用のキャンバス -->
-        <canvas id="gameCanvas"></canvas>
+        <!-- 背景レイヤー（シーンごとにグラデーションが切り替わる） -->
+        <div id="background-layer"></div>
         
         <!-- BGM用オーディオ要素 -->
         <audio id="bgm-title" src="./audio/bgm_title.mp3" loop preload="auto"></audio>
-        <!-- ダイス効果音用オーディオ要素 -->
-        <audio id="se-dice" src="./audio/dice.mp3" preload="auto"></audio>
 
         <!-- 1. タイトル画面 -->
         <div id="title-layer" class="ui-screen fade-in">
@@ -60,19 +58,8 @@
             </div>
         </div>
 
-        <!-- 4. SAN値チェック（ダイス）画面 -->
-        <div id="dice-layer" class="ui-screen" style="display: none;">
-            <h2 id="dice-title">🎲 SAN値チェック (1D100)</h2>
-            <div id="dice-box">
-                <span id="dice-result">??</span>
-            </div>
-            <div class="button-container">
-                <button id="btn-roll-dice" class="choice-btn">ダイスを振る</button>
-                <button id="btn-dice-next" class="choice-btn" style="display: none;">次へ</button>
-            </div>
-        </div>
 
-        <!-- 5. まぶた開閉アニメーション用レイヤー -->
+        <!-- 4. まぶた開閉アニメーション用レイヤー -->
         <div id="eyelid-layer" class="eyelid-container">
             <div class="eyelid-top"></div>
             <div class="eyelid-bottom"></div>
@@ -81,4 +68,4 @@
     
     <script type="module" src="src/main.js"></script>
 </body>
-</html>
+</html>
