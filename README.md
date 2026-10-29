@@ -30,6 +30,7 @@ style.css                  見た目・アニメーション
 audio/                     BGM(タイトル / 本編)
 images/                    背景・ロゴ
 images/chara/              立ち絵
+images/effects/            エフェクト画像
 src/
   main.js                  起動処理
   Game.js                  全体のまとめ役(画面の流れ・操作の受け付け)
@@ -65,8 +66,9 @@ src/
 | `bg` | 背景(`BACKGROUNDS` のキー) |
 | `chara` | 立ち絵 `{ id, expr, silhouette }`。`null` で退場 |
 | `particles` | `"light"` 光の粒 / `"dust"` ほこり / `"none"` なし |
+| `overlay` | `"rays"` 後光 / `"sunlight"` 差し込む光 / `"none"` なし |
 | `style` | `"center"` で画面中央の赤枠 |
-| `fx` | `"shake"` 画面揺れ / `"flash"` 白フラッシュ |
+| `fx` | `"shake"` 画面揺れ / `"flash"` 白フラッシュ / `"lines"` 集中線 |
 | `transition` | `"black"` 暗転 / `"eyelid"` まぶたが開く |
 
 ## 素材・クレジット
@@ -75,7 +77,8 @@ src/
 |---|---|---|
 | 立ち絵(女神) | 神秘的な女性 | kei02工房 https://booth.pm/ja/items/5320599 |
 | 本編BGM | ウキウキららら | 甘茶の音楽工房 |
-| フォント | Zen Maru Gothic | Google Fonts(SIL Open Font License) |
+| エフェクト画像 | 集中線・後光・差し込む光 | 自作(images/effects/) |
+| フォント | Zen Maru Gothic / Shippori Mincho | Google Fonts(SIL Open Font License) |
 
 各素材の再配布は禁止されています。素材ファイル単体での配布はしないでください。
 

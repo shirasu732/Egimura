@@ -118,7 +118,7 @@ export class Game {
     showTitle() {
         this.showScreen("title");
         this.textBox.hide();
-        this.stage.apply({ bg: "title", chara: null, particles: "title" });
+        this.stage.apply({ bg: "title", chara: null, particles: "title", overlay: "none" });
         $("btn-load").disabled = !hasAnySave();
     }
 
@@ -149,7 +149,7 @@ export class Game {
     showQuestion() {
         this.showScreen("question");
         this.textBox.hide();
-        this.stage.apply({ bg: "question", particles: "none" });
+        this.stage.apply({ bg: "question", particles: "none", overlay: "none" });
         $("question-text").textContent = `${this.playerName || "主人公"}には彼女がいますか?`;
     }
 
@@ -170,7 +170,7 @@ export class Game {
         this.stage.fadeBlack(() => {
             this.showScreen("end");
             this.textBox.hide();
-            this.stage.apply({ bg: "title", chara: null, particles: "title" });
+            this.stage.apply({ bg: "title", chara: null, particles: "title", overlay: "none" });
         });
     }
 

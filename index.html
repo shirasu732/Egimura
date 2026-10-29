@@ -6,7 +6,7 @@
     <title>恋色パレット</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Shippori+Mincho:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,9 +21,12 @@
             <div id="bg-vignette"></div>
             <canvas id="fx-canvas"></canvas>
 
+            <div id="fx-back"></div>
             <div id="chara-layer">
                 <img id="chara-img" alt="">
             </div>
+            <div id="fx-front"></div>
+            <div id="fx-lines"></div>
 
             <!-- メッセージウィンドウ -->
             <div id="message-layer" hidden>
@@ -135,7 +138,7 @@
         <!-- ===== 演出用 ===== -->
         <div id="flash-layer"></div>
         <div id="black-layer"></div>
-        <div id="eyelid-layer"><div class="eyelid-top"></div><div class="eyelid-bottom"></div></div>
+        <div id="eyelid-layer"></div>
         <div id="toast" hidden></div>
     </div>
 

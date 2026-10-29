@@ -3,7 +3,7 @@
 // ============================================================
 import { OPENING } from "../script.js";
 
-const SCENE_KEYS = ["bg", "chara", "particles", "style"];
+const SCENE_KEYS = ["bg", "chara", "particles", "overlay", "style"];
 
 export class Story {
     // getName(): プレイヤー名 / onEnd(): 最後まで読んだとき
@@ -97,7 +97,7 @@ export class Story {
     }
 
     sceneAt(index) {
-        const scene = { bg: "question", chara: null, particles: "none", style: null };
+        const scene = { bg: "question", chara: null, particles: "none", overlay: "none", style: null };
         for (const line of this.script.slice(0, index + 1)) {
             SCENE_KEYS.forEach((key) => { if (key in line) scene[key] = line[key]; });
         }
