@@ -31,6 +31,11 @@ export class TextBox {
         this.type(text);
     }
 
+    // 中央の強調表示をやめて通常のウィンドウに戻す
+    resetStyle() {
+        this.el.layer.classList.remove("center-mode");
+    }
+
     hide() {
         this.stop();
         this.el.layer.hidden = true;

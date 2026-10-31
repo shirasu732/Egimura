@@ -10,13 +10,18 @@ import { loadConfig, hasAnySave } from "./engine/Storage.js";
 import { Backlog } from "./engine/ui/Backlog.js";
 import { SaveMenu } from "./engine/ui/SaveMenu.js";
 import { ConfigMenu } from "./engine/ui/ConfigMenu.js";
-import { initOverlays, isOverlayOpen, closeTopOverlay, confirmDialog } from "./engine/ui/Overlay.js";
+import { initOverlays, isOverlayOpen, closeTopOverlay, confirmDialog, toast } from "./engine/ui/Overlay.js";
+import { ChoiceMenu } from "./engine/ui/ChoiceMenu.js";
+import { DateBadge } from "./engine/ui/DateBadge.js";
+import { DebugPanel } from "./engine/ui/DebugPanel.js";
+import { DayLoop } from "./engine/DayLoop.js";
 
 const $ = (id) => document.getElementById(id);
 
 export class Game {
     constructor() {
         this.mode = "title";     // title / name / question / story / end
+        this.part = "opening";   // story 中の段階:opening(オープニング)/ main(本編)
         this.playerName = "";
         this.config = loadConfig();
 
@@ -25,15 +30,23 @@ export class Game {
         this.stage = new Stage(this.config);
         this.textBox = new TextBox(this.config);
         this.backlog = new Backlog();
+        this.choiceMenu = new ChoiceMenu();
+        this.dateBadge = new DateBadge();
         this.story = new Story({
             stage: this.stage,
             textBox: this.textBox,
             backlog: this.backlog,
-            getName: () => this.playerName || "主人公",
-            onEnd: () => this.showEnd()
+            choiceMenu: this.choiceMenu,
+            getName: () => this.playerName || "主人公"
+        });
+        this.dayLoop = new DayLoop({
+            story: this.story,
+            dateBadge: this.dateBadge,
+            debug: new DebugPanel(),
+            onEnding: (id, title) => this.showEnd(title)
         });
         this.saveMenu = new SaveMenu({
-            getSaveData: () => ({ ...this.story.getSaveData(), playerName: this.playerName }),
+            getSaveData: () => ({ ...this.currentSaveData(), playerName: this.playerName }),
             onLoad: (data) => this.loadGame(data),
             isPlaying: () => this.mode === "story"
         });
@@ -92,7 +105,7 @@ export class Game {
             ev.stopPropagation();   // 文章が進まないように
             const actions = {
                 log: () => this.backlog.open(),
-                save: () => this.saveMenu.open("save"),
+                save: () => this.openSave(),
                 load: () => this.saveMenu.open("load"),
                 config: () => this.configMenu.open(),
                 title: () => this.confirmReturnToTitle()
@@ -118,6 +131,8 @@ export class Game {
     showTitle() {
         this.showScreen("title");
         this.textBox.hide();
+        this.choiceMenu.hide();
+        this.dateBadge.hide();
         this.stage.apply({ bg: "title", chara: null, particles: "title", overlay: "none" });
         $("btn-load").disabled = !hasAnySave();
     }
@@ -162,24 +177,54 @@ export class Game {
                 () => this.showQuestion()
             );
         } else {
-            this.story.start();
+            this.part = "opening";
+            this.story.runOpening(() => this.startMain());
         }
     }
 
-    showEnd() {
+    // オープニングが終わったら本編(4月第1週)へ
+    startMain() {
+        this.part = "main";
+        this.dayLoop.newGame();
+    }
+
+    showEnd(title) {
         this.stage.fadeBlack(() => {
             this.showScreen("end");
             this.textBox.hide();
+            this.dateBadge.hide();
+            $("end-title").textContent = `― ${title} ―`;
             this.stage.apply({ bg: "title", chara: null, particles: "title", overlay: "none" });
         });
+    }
+
+    // ---------- セーブ / ロード ----------
+    openSave() {
+        if (this.part === "main" && this.dayLoop.inEnding) return toast("エンディング中はセーブできません");
+        this.saveMenu.open("save");
+    }
+
+    currentSaveData() {
+        if (this.part === "main") return this.dayLoop.getSaveData();
+        return { mode: "opening", ...this.story.getSaveData() };
     }
 
     loadGame(data) {
         this.stage.fadeBlack(() => {
             this.bgm.play("main");
             this.playerName = data.playerName || "";
+            this.choiceMenu.hide();
+            this.textBox.resetStyle();
             this.showScreen("story");
-            this.story.loadAt(data.index);
+            if (data.mode === "main") {
+                this.part = "main";
+                this.dayLoop.load(data.state);
+            } else {
+                // オープニングのセーブ(旧バージョンのセーブもこちら)
+                this.part = "opening";
+                this.dateBadge.hide();
+                this.story.loadOpeningAt(data.index, () => this.startMain());
+            }
         });
     }
 

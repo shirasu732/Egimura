@@ -19,7 +19,18 @@ export const BACKGROUNDS = {
     title: null,                    // タイトルはグラデーション
     question: "bg_question.jpg",    // 夜の住宅街
     god: "bg_god.jpg",              // 女神空間
-    room: "bg_room.jpg"             // 新しい部屋
+    room: "bg_room.jpg",            // 主人公の部屋
+    // 本編の場所（images/bg/）
+    classroom: "bg/classroom.jpg",
+    classroomAfter: "bg/classroom_after.jpg",
+    library: "bg/library.jpg",
+    lab: "bg/lab.jpg",
+    ground: "bg/ground.jpg",
+    rooftop: "bg/rooftop.jpg",
+    cafeteria: "bg/cafeteria.jpg",
+    residential: "bg/residential.jpg",
+    mall: "bg/mall.jpg",
+    seaside: "bg/seaside.jpg"
 };
 
 // 立ち絵（images/chara/ フォルダ）
